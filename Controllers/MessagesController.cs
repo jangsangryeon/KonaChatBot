@@ -158,9 +158,10 @@ namespace KonaChatBot
                 DateTime startTime = DateTime.Now;
                 long unixTime = ((DateTimeOffset)startTime).ToUnixTimeSeconds();
 
-                await Conversation.SendAsync(activity, () => new TestDriveApi(orgMent));
-                response = Request.CreateResponse(HttpStatusCode.OK);
-                return response;
+                //await Conversation.SendAsync(activity, () => new TestDriveApi(orgMent));
+                //await Conversation.SendAsync(activity, () => new RecommendApiDialog());
+                //response = Request.CreateResponse(HttpStatusCode.OK);
+                //return response;
 
                 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                 ////페이스북 위치 값 저장
@@ -260,6 +261,7 @@ namespace KonaChatBot
                 
                 //COMMON DIALG와 API 호출 분기
                 //relation 값이 있을 경우
+
                 if (relationList.Count > 0)
                 {
                     //답변이 시승 rest api 호출인 경우
@@ -279,6 +281,7 @@ namespace KonaChatBot
                         if (activity.ChannelId != "facebook")
                         {
                             //await Conversation.SendAsync(activity, () => new TestDriveApi(cacheList.luisIntent, cacheList.luisEntities, orgMent));
+                            await Conversation.SendAsync(activity, () => new RecommendApiDialog());
                         } else
                         {
                             //facebook일 경우 처리

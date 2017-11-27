@@ -25,7 +25,7 @@ namespace KonaChatBot.Models
         public string btn_4_title { get; set; }
         public string btn_4_context { get; set; }
         public string address { get; set; }
-        
+
 
 
     }

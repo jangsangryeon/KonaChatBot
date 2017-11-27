@@ -286,7 +286,6 @@ namespace KonaChatBot
                         } else
                         {
                             //facebook일 경우 처리
-
                         }
                     }
                     //답변이 일반 답변인 경우

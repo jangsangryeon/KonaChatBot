@@ -129,6 +129,11 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Models\PriceMediaDlgList.cs" />
+    <Compile Include="Models\PriceModelList.cs" />
+    <Compile Include="Models\PriceTextDlgList.cs" />
+    <Compile Include="Models\PriceValueList.cs" />
+    <Compile Include="Models\Price_API_DLG.cs" />
     <Compile Include="Models\RecommendConfirm.cs" />
     <Compile Include="Models\RecommendList.cs" />
     <Compile Include="Models\Recommend_DLG_MEDIA.cs" />

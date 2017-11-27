@@ -274,7 +274,7 @@ namespace KonaChatBot
                     //답변이 가격 rest api 호출인 경우
                     else if (relationList[0].dlgApiDefine.Equals("api quot"))
                     {
-                        //await Conversation.SendAsync(activity, () => new TestDriveApi(cacheList.luisIntent, cacheList.luisEntities, orgMent));
+                        await Conversation.SendAsync(activity, () => new PriceApi(cacheList.luisIntent, cacheList.luisEntities, orgMent));
                     }
                     //답변이 추천 rest api 호출인 경우
                     else if (relationList[0].dlgApiDefine.Equals("api recommend"))

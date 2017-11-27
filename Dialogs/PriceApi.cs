@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using KonaChatBot.DB;
 using KonaChatBot.Models;
 using System.Diagnostics;
+using System.Net.Http;
+using Newtonsoft.Json;
 
 namespace KonaChatBot.Dialogs
 {
@@ -40,59 +42,452 @@ namespace KonaChatBot.Dialogs
 
             //키워드 그룹 추출
             List<KeywordGroup> keywordgrouplist = db.SelectKeywordGroupList(entities);
+            List<Price_API_DLG> priceApiDlgList = new List<Price_API_DLG>();
+            List<PriceMediaDlgList> priceMediaDlgList = new List<PriceMediaDlgList>();
 
-            String entitlekeywordgroup = "", returndialog = "";
+            String entitlekeywordgroup = "",  entitlekeyworddetail = "";
+
+            var reply = context.MakeMessage();
+            reply.AttachmentLayout = AttachmentLayoutTypes.Carousel;
 
             foreach (KeywordGroup keyword in keywordgrouplist)
             {
                 entitlekeywordgroup += keyword.keywordgroup + ",";
+                entitlekeyworddetail += keyword.keyworddetail + "=" + keyword.keyword + ",";
             }
-                
+
             if (entitlekeywordgroup.Contains("TRIMWORD"))
             {
-                //entities "가솔린", "2WD", "가격", "트림"
+
+                if (entitlekeywordgroup.Contains("EXTERIORWORD"))
+                {
+                    //entities "가솔린", "2WD", "가격", "트림","외장색상"
+                    Debug.WriteLine("TRIMWORD,EXTERIORWORD entitlekeyworddetail : " + entitlekeyworddetail);
+                    priceApiDlgList = db.SelectPriceList_API_DLG("TRIMWORD,EXTERIORWORD");
+
+                    for (int i = 0; i < priceApiDlgList.Count; i++)
+                    {
+
+                        Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].keywordGrp);
+                        Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].priceDlgId);
+                        Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].dlgType);
+
+
+                        if (priceApiDlgList[i].dlgType == "TEXT")
+                        {
+                            await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText);
+                        }
+                        else if (priceApiDlgList[i].dlgType == "MEDIA")
+                        {
+                            Debug.WriteLine("card dlg id = " + priceApiDlgList[i].priceDlgId);
+                            Debug.WriteLine("entitlekeyworddetail = " + entitlekeyworddetail);
+
+                            priceMediaDlgList = db.SelectPriceMediaDlgList(priceApiDlgList[i].priceDlgId, "TRIMWORD,EXTERIORWORD", entitlekeyworddetail);
+
+                        }
+
+                    }
+                }
+                else if (entitlekeywordgroup.Contains("INTERIORWORD"))
+                {
+                    //entities "가솔린", "2WD", "가격", "트림","내장색상"
+                    Debug.WriteLine("TRIMWORD,INTERIORWORD entitlekeyworddetail : " + entitlekeyworddetail);
+                    priceApiDlgList = db.SelectPriceList_API_DLG("TRIMWORD,INTERIORWORD");
+
+                    for (int i = 0; i < priceApiDlgList.Count; i++)
+                    {
+
+                        Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].keywordGrp);
+                        Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].priceDlgId);
+                        Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].dlgType);
+
+
+                        if (priceApiDlgList[i].dlgType == "TEXT")
+                        {
+                            //db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText;
+                            await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText);
+                        }
+                        else if (priceApiDlgList[i].dlgType == "MEDIA")
+                        {
+                            Debug.WriteLine("card dlg id = " + priceApiDlgList[i].priceDlgId);
+                            priceMediaDlgList = db.SelectPriceMediaDlgList(priceApiDlgList[i].priceDlgId, "TRIMWORD,INTERIORWORD", entitlekeyworddetail);
+                        }
+
+                    }
+                }
+                else
+                {
+                    //entities "가솔린", "2WD", "가격", "트림"
+                    Debug.WriteLine("TRIMWORD entitlekeyworddetail : " + entitlekeyworddetail);
+                    priceApiDlgList = db.SelectPriceList_API_DLG("TRIMWORD");
+
+                    for (int i = 0; i < priceApiDlgList.Count; i++)
+                    {
+
+                        Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].keywordGrp);
+                        Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].priceDlgId);
+                        Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].dlgType);
+
+
+                        if (priceApiDlgList[i].dlgType == "TEXT")
+                        {
+                            //db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText;
+                            await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText);
+                        }
+                        else if (priceApiDlgList[i].dlgType == "MEDIA")
+                        {
+                            Debug.WriteLine("card dlg id = " + priceApiDlgList[i].priceDlgId);
+                            priceMediaDlgList = db.SelectPriceMediaDlgList(priceApiDlgList[i].priceDlgId, "TRIMWORD", entitlekeyworddetail);
+                        }
+
+                    }
+                }
             }
             else if (entitlekeywordgroup.Contains("OPTIONWORD"))
             {
                 //entities "옵션"
+                Debug.WriteLine("OPTIONWORD entitlekeyworddetail : " + entitlekeyworddetail);
+                priceApiDlgList = db.SelectPriceList_API_DLG("OPTIONWORD");
+
+                for (int i = 0; i < priceApiDlgList.Count; i++)
+                {
+
+                    Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].keywordGrp);
+                    Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].priceDlgId);
+                    Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].dlgType);
+
+
+                    if (priceApiDlgList[i].dlgType == "TEXT")
+                    {
+                        //db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText;
+                        await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText);
+                    }
+                    else if (priceApiDlgList[i].dlgType == "MEDIA")
+                    {
+                        Debug.WriteLine("card dlg id = " + priceApiDlgList[i].priceDlgId);
+                        priceMediaDlgList = db.SelectPriceMediaDlgList(priceApiDlgList[i].priceDlgId, "OPTIONWORD", entitlekeyworddetail);
+                    }
+
+                }
             }
             else if (entitlekeywordgroup.Contains("OPTION"))
             {
                 //entities "네비게이션"
+                Debug.WriteLine("OPTION entitlekeyworddetail : " + entitlekeyworddetail);
+                priceApiDlgList = db.SelectPriceList_API_DLG("OPTION");
+
+                for (int i = 0; i < priceApiDlgList.Count; i++)
+                {
+
+                    Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].keywordGrp);
+                    Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].priceDlgId);
+                    Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].dlgType);
+
+
+                    if (priceApiDlgList[i].dlgType == "TEXT")
+                    {
+                        //db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText;
+                        await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText);
+                    }
+                    else if (priceApiDlgList[i].dlgType == "MEDIA")
+                    {
+                        Debug.WriteLine("card dlg id = " + priceApiDlgList[i].priceDlgId);
+                        priceMediaDlgList = db.SelectPriceMediaDlgList(priceApiDlgList[i].priceDlgId, "OPTION", entitlekeyworddetail);
+                    }
+
+                }
             }
             else if (entitlekeywordgroup.Contains("INTERIORWORD"))
             {
                 //entities "가솔린", "2WD", "내장색상"
+                Debug.WriteLine("INTERIORWORD entitlekeyworddetail : " + entitlekeyworddetail);
+                priceApiDlgList = db.SelectPriceList_API_DLG("INTERIORWORD");
+
+                for (int i = 0; i < priceApiDlgList.Count; i++)
+                {
+
+                    Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].keywordGrp);
+                    Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].priceDlgId);
+                    Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].dlgType);
+
+
+                    if (priceApiDlgList[i].dlgType == "TEXT")
+                    {
+                        //db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText;
+                        await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText);
+                    }
+                    else if (priceApiDlgList[i].dlgType == "MEDIA")
+                    {
+                        Debug.WriteLine("card dlg id = " + priceApiDlgList[i].priceDlgId);
+                        priceMediaDlgList = db.SelectPriceMediaDlgList(priceApiDlgList[i].priceDlgId, "INTERIORWORD", entitlekeyworddetail);
+                    }
+
+                }
             }
             else if (entitlekeywordgroup.Contains("EXTERIORWORD"))
             {
                 //entities "가솔린", "2WD", "외장색상"
+                Debug.WriteLine("EXTERIORWORD entitlekeyworddetail : " + entitlekeyworddetail);
+                priceApiDlgList = db.SelectPriceList_API_DLG("EXTERIORWORD");
+
+                for (int i = 0; i < priceApiDlgList.Count; i++)
+                {
+
+                    Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].keywordGrp);
+                    Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].priceDlgId);
+                    Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].dlgType);
+
+
+                    if (priceApiDlgList[i].dlgType == "TEXT")
+                    {
+                        //db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText;
+                        await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText);
+                    }
+                    else if (priceApiDlgList[i].dlgType == "MEDIA")
+                    {
+                        Debug.WriteLine("card dlg id = " + priceApiDlgList[i].priceDlgId);
+                        priceMediaDlgList = db.SelectPriceMediaDlgList(priceApiDlgList[i].priceDlgId, "EXTERIORWORD", entitlekeyworddetail);
+                    }
+
+                }
             }
             else if (entitlekeywordgroup.Contains("INTERIOR"))
             {
                 //entities "가솔린", "2WD", "오랜지"
+                Debug.WriteLine("INTERIOR entitlekeyworddetail : " + entitlekeyworddetail);
+                priceApiDlgList = db.SelectPriceList_API_DLG("INTERIOR");
+
+                for (int i = 0; i < priceApiDlgList.Count; i++)
+                {
+
+                    Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].keywordGrp);
+                    Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].priceDlgId);
+                    Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].dlgType);
+
+
+                    if (priceApiDlgList[i].dlgType == "TEXT")
+                    {
+                        //db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText;
+                        await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText);
+                    }
+                    else if (priceApiDlgList[i].dlgType == "MEDIA")
+                    {
+                        Debug.WriteLine("card dlg id = " + priceApiDlgList[i].priceDlgId);
+                        priceMediaDlgList = db.SelectPriceMediaDlgList(priceApiDlgList[i].priceDlgId, "INTERIOR", entitlekeyworddetail);
+                    }
+
+                }
             }
             else if (entitlekeywordgroup.Contains("EXTERIOR"))
             {
                 //entities "가솔린", "2WD", "다크나이트"
+                Debug.WriteLine("EXTERIOR entitlekeyworddetail : " + entitlekeyworddetail);
+                priceApiDlgList = db.SelectPriceList_API_DLG("EXTERIOR");
+
+                for (int i = 0; i < priceApiDlgList.Count; i++)
+                {
+
+                    Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].keywordGrp);
+                    Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].priceDlgId);
+                    Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].dlgType);
+
+
+                    if (priceApiDlgList[i].dlgType == "TEXT")
+                    {
+                        //db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText;
+                        await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText);
+                    }
+                    else if (priceApiDlgList[i].dlgType == "MEDIA")
+                    {
+                        Debug.WriteLine("card dlg id = " + priceApiDlgList[i].priceDlgId);
+                        priceMediaDlgList = db.SelectPriceMediaDlgList(priceApiDlgList[i].priceDlgId, "EXTERIOR", entitlekeyworddetail);
+                    }
+
+                }
             }
             else if (entitlekeywordgroup.Contains("TRIM"))
             {
                 //entities "가솔린", "2WD"
+                Debug.WriteLine("TRIM entitlekeyworddetail : " + entitlekeyworddetail);
+                priceApiDlgList = db.SelectPriceList_API_DLG("TRIM");
+
+                for (int i = 0; i < priceApiDlgList.Count; i++)
+                {
+
+                    Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].keywordGrp);
+                    Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].priceDlgId);
+                    Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].dlgType);
+
+
+                    if (priceApiDlgList[i].dlgType == "TEXT")
+                    {
+                        //db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText;
+                        await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText);
+                    }
+                    else if (priceApiDlgList[i].dlgType == "MEDIA")
+                    {
+                        Debug.WriteLine("card dlg id = " + priceApiDlgList[i].priceDlgId);
+                        priceMediaDlgList = db.SelectPriceMediaDlgList(priceApiDlgList[i].priceDlgId, "TRIM", entitlekeyworddetail);
+                    }
+
+                }
+            }
+            else if (entitlekeywordgroup.Contains("SHORTCUT"))
+            {
+                //entities "견적", "바로가기"
+                Debug.WriteLine("SHORTCUT entitlekeyworddetail : " + entitlekeyworddetail);
+                priceApiDlgList = db.SelectPriceList_API_DLG("SHORTCUT");
+
+                for (int i = 0; i < priceApiDlgList.Count; i++)
+                {
+
+                    Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].keywordGrp);
+                    Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].priceDlgId);
+                    Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].dlgType);
+
+
+                    if (priceApiDlgList[i].dlgType == "TEXT")
+                    {
+                        //db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText;
+                        await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText);
+                    }
+                    else if (priceApiDlgList[i].dlgType == "MEDIA")
+                    {
+                        Debug.WriteLine("card dlg id = " + priceApiDlgList[i].priceDlgId);
+                        priceMediaDlgList = db.SelectPriceMediaDlgList(priceApiDlgList[i].priceDlgId, "SHORTCUT", "");
+                    }
+
+                }
             }
             else if (entitlekeywordgroup.Contains("PRICEWORD"))
             {
                 //entities "가격"
-                returndialog = "가격이 궁금하시군요";
-            } else
+                Debug.WriteLine("PRICEWORD entitlekeyworddetail : " + entitlekeyworddetail);
+
+
+                List<PriceModelList> priceModelList = db.SelectPriceModelList();
+
+                priceApiDlgList = db.SelectPriceList_API_DLG("PRICEWORD");
+
+                for (int i = 0; i < priceApiDlgList.Count; i++)
+                {
+
+                    Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].keywordGrp);
+                    Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].priceDlgId);
+                    Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].dlgType);
+
+
+                    if(priceApiDlgList[i].dlgType == "TEXT")
+                    {
+                        //db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText;
+                        await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText);
+                    }
+                    else if (priceApiDlgList[i].dlgType == "MEDIA")
+                    {
+                        Debug.WriteLine("card dlg id = " + priceApiDlgList[i].priceDlgId);
+                        Debug.WriteLine("card dlg id = " + entitlekeyworddetail);
+                        Debug.WriteLine("card dlg id = " + entitlekeywordgroup);
+                        priceMediaDlgList = db.SelectPriceMediaDlgList(priceApiDlgList[i].priceDlgId, "PRICEWORD", "");
+                    }
+
+                }
+                //returndialog = "가격이 궁금하시군요";
+            }
+            else
             {
                 Debug.WriteLine("keyword group error : " + entitlekeywordgroup);
             }
 
-            await context.PostAsync(returndialog);
+            Translator engineTranslateInfo;
+            Translator trimTranslateInfo;
+            Translator titleTranslateInfo;
+
+            if (priceMediaDlgList.Count > 0 )
+            {
+                for (int i = 0; i < priceMediaDlgList.Count; i++)
+                {
+                    engineTranslateInfo = await getTranslate(priceMediaDlgList[i].engine);
+                    trimTranslateInfo = await getTranslate(priceMediaDlgList[i].trim);
+                    titleTranslateInfo = await getTranslate(priceMediaDlgList[i].cardTitle);
+
+                    //translateInfo.data.translations[0].translatedText.Replace("&#39;", "'")
+                    Debug.WriteLine("priceMediaDlgList[i].cardTitle color : " + engineTranslateInfo.data.translations[0].translatedText);
+                    Debug.WriteLine("priceMediaDlgList[i].cardTitle color : " + trimTranslateInfo.data.translations[0].translatedText);
+                    Debug.WriteLine("priceMediaDlgList[i].cardTitle color : " + titleTranslateInfo.data.translations[0].translatedText);
+                    Debug.WriteLine("AA : " + priceMediaDlgList[i].mediaUrl);
+                    Debug.WriteLine("AA : " + priceMediaDlgList[i].mediaUrl.Replace("CALL(ENGINEIMAGE_URL)", engineTranslateInfo.data.translations[0].translatedText.Replace(" ","")).Replace("CALL(TRIMIMAGE_URL)", trimTranslateInfo.data.translations[0].translatedText.Replace(" ", "")).Replace("CALL(IMAGE_URL)", titleTranslateInfo.data.translations[0].translatedText));
+                    //CardImage 입력
+                    CardImage cardImage = new CardImage()
+                    {
+                        Url = priceMediaDlgList[i].mediaUrl.Replace("CALL(ENGINEIMAGE_URL)", engineTranslateInfo.data.translations[0].translatedText.Replace(" ", "")).Replace("CALL(TRIMIMAGE_URL)", trimTranslateInfo.data.translations[0].translatedText.Replace(" ", "")).Replace("CALL(IMAGE_URL)", titleTranslateInfo.data.translations[0].translatedText)
+                    };
+
+                    //CardAction 입력
+                    List<CardAction> cardButtons = new List<CardAction>();
+
+                    if (priceMediaDlgList[i].btn1Type.Length != 0)
+                    {
+                        CardAction plButton = new CardAction()
+                        {
+                            Value = priceMediaDlgList[i].btn1Context,
+                            Type = priceMediaDlgList[i].btn1Type,
+                            Title = priceMediaDlgList[i].btn1Title
+                        };
+                        cardButtons.Add(plButton);
+                    }
+
+                    if (priceMediaDlgList[i].btn2Type.Length != 0)
+                    {
+                        CardAction plButton = new CardAction()
+                        {
+                            Value = priceMediaDlgList[i].btn2Context,
+                            Type = priceMediaDlgList[i].btn2Type,
+                            Title = priceMediaDlgList[i].btn2Title
+                        };
+                        cardButtons.Add(plButton);
+                    }
+
+                    if (priceMediaDlgList[i].btn3Type.Length != 0)
+                    {
+                        CardAction plButton = new CardAction()
+                        {
+                            Value = priceMediaDlgList[i].btn3Context,
+                            Type = priceMediaDlgList[i].btn3Type,
+                            Title = priceMediaDlgList[i].btn3Title
+                        };
+                        cardButtons.Add(plButton);
+                    }
+                    if (priceMediaDlgList[i].btn4Type.Length != 0)
+                    {
+                        CardAction plButton = new CardAction()
+                        {
+                            Value = priceMediaDlgList[i].btn4Context,
+                            Type = priceMediaDlgList[i].btn4Type,
+                            Title = priceMediaDlgList[i].btn4Title
+                        };
+                        cardButtons.Add(plButton);
+                    }
+
+                    ////맵에서 text로 출력되는 주소값 치환
+                    //if (!string.IsNullOrEmpty(replaceStr))
+                    //{
+                    //    reply.Text = replaceStr.Replace("CALL(지점 주소)", SelectTestDriveList_API_DLG_MEDIA[i].address);
+                    //    await context.PostAsync(reply);
+                    //    replaceStr = "";
+                    //    reply.Text = "";
+                    //}
+
+
+                    reply.Attachments.Add(GetHeroCard(priceMediaDlgList[i].cardTitle, priceMediaDlgList[i].cardSubTitle, priceMediaDlgList[i].cardText, cardImage, cardButtons));
+                }
+                await context.PostAsync(reply);
+            }
+
+
+            //await context.PostAsync(returndialog);
 
             // 변수 선언
-            string replaceStr = "";
+            //string replaceStr = "";
             //엔티티 type, 엔티티 value 추출
             //List<TestDriveList_API> SelectTestDriveList_API = db.SelectTestDriveList_API(luis_intent, entitiesStr, queryStr);
             ////다이얼로그 ID 추출
@@ -211,6 +606,30 @@ namespace KonaChatBot.Dialogs
 
             return heroCard.ToAttachment();
         }
+
+        private static async Task<Translator> getTranslate(string input)
+        {
+            Translator trans = new Translator();
+
+            using (HttpClient client = new HttpClient())
+            {
+                string appId = "AIzaSyDr4CH9BVfENdM9uoSK0fANFVWD0gGXlJM";
+
+                string url = string.Format("https://translation.googleapis.com/language/translate/v2/?key={0}&q={1}&source=ko&target=en&model=nmt", appId, input);
+
+                HttpResponseMessage msg = await client.GetAsync(url);
+
+                if (msg.IsSuccessStatusCode)
+                {
+                    var JsonDataResponse = await msg.Content.ReadAsStringAsync();
+                    trans = JsonConvert.DeserializeObject<Translator>(JsonDataResponse);
+                }
+                return trans;
+            }
+
+        }
+
+
 
     }
 }

@@ -1275,12 +1275,6 @@ namespace KonaChatBot.DB
             return keywordgrouplist;
         }
 
-
-
-
-
-
-
         //견적 질문 -> 엔진 모델 보여주는 데이터
         public List<PriceModelList> SelectPriceModelList()
         {
@@ -1308,7 +1302,6 @@ namespace KonaChatBot.DB
             }
             return priceModelList;
         }
-
 
         public List<Price_API_DLG> SelectPriceList_API_DLG(String keywordGroup)
         {
@@ -1347,6 +1340,7 @@ namespace KonaChatBot.DB
             }
             return priceList_api_dlg;
         }
+
         // 견적 text 다이알로그 select
         public List<PriceTextDlgList> SelectPriceTextDlgList(int dlgId)
         {

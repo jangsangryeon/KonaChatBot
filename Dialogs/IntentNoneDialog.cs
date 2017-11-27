@@ -264,7 +264,7 @@
 							orgENGMent = orgENGMent.Replace("&#39;", "'");
 
 							//int dbResult = db.insertUserQuery(orgKRMent, orgENGMent, "", "", "", 1, 'S', "", "", "", "SEARCH", MessagesController.userData.GetProperty<int>("appID"));
-							int dbResult = db.insertUserQuery(orgKRMent,  "", "", "", 1, 'S', MessagesController.chatBotID);
+							int dbResult = db.insertUserQuery(orgKRMent,  "", "", "", "1", 'S', MessagesController.chatBotID);
 							Debug.WriteLine("INSERT QUERY RESULT : " + dbResult.ToString());
 
 							DateTime endTime = DateTime.Now;
@@ -394,7 +394,7 @@
             //orgENGMent = orgENGMent.Replace("&#39;", "'");
 
             //int dbResult = db.insertUserQuery(orgKRMent, orgENGMent, "", "", "", 0, 'D', "", "", "", "SEARCH", MessagesController.userData.GetProperty<int>("appID"));
-            int dbResult = db.insertUserQuery(orgKRMent,  "", "", "", 0, 'D',  MessagesController.chatBotID);
+            int dbResult = db.insertUserQuery(orgKRMent,  "", "", "", "0", 'D',  MessagesController.chatBotID);
 			Debug.WriteLine("INSERT QUERY RESULT : " + dbResult.ToString());
 
 

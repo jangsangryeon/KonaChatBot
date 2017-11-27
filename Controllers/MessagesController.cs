@@ -209,19 +209,20 @@ namespace KonaChatBot
                 Debug.WriteLine("* luisId : " + cacheList.luisId);              // luisId
                 Debug.WriteLine("* Intent : " + cacheList.luisIntent);            // intentId
                 Debug.WriteLine("* Entity : " + cacheList.luisEntities);         // entitiesId
+                Debug.WriteLine("* Score : " + cacheList.luisScore);         // entitiesId
 
                 //캐시에 없을 경우
                 if (cacheList.luisIntent == null || cacheList.luisEntities == null)
                 {
                     //루이스 호출전 TBL_WORD_CHG_DICT 테이블에서 전처리
-                    for (int n = 0; n < Regex.Split(orgMent, " ").Length; n++)
-                    {
-                        string chgMsg = db.SelectChgMsg(Regex.Split(orgMent, " ")[n]);
-                        if (!string.IsNullOrEmpty(chgMsg))
-                        {
-                            orgMent = orgMent.Replace(Regex.Split(orgMent, " ")[n], chgMsg);
-                        }
-                    }
+                    //for (int n = 0; n < Regex.Split(orgMent, " ").Length; n++)
+                    //{
+                    //    string chgMsg = db.SelectChgMsg(Regex.Split(orgMent, " ")[n]);
+                    //    if (!string.IsNullOrEmpty(chgMsg))
+                    //    {
+                    //        orgMent = orgMent.Replace(Regex.Split(orgMent, " ")[n], chgMsg);
+                    //    }
+                    //}
 
                     //루이스 체크
                     cacheList.luisId = GetMultiLUIS(orgMent);
@@ -299,7 +300,7 @@ namespace KonaChatBot
                         Debug.WriteLine("* activity.Recipient.Id : " + activity.Recipient.Id);
                         Debug.WriteLine("* activity.ServiceUrl : " + activity.ServiceUrl);
 
-                        int dbResult = db.insertUserQuery(cashOrgMent, "", "", "", 0, 'D', MessagesController.chatBotID);
+                        int dbResult = db.insertUserQuery(cashOrgMent, cacheList.luisIntent, cacheList.luisEntities, "0", cacheList.luisId, 'H',0);
                         Debug.WriteLine("INSERT QUERY RESULT : " + dbResult.ToString());
 
                         if (db.insertHistory(activity.Conversation.Id, activity.Text, relationList[0].dlgId.ToString(), activity.ChannelId, ((endTime - startTime).Milliseconds), 0) > 0)
@@ -516,6 +517,7 @@ namespace KonaChatBot
             query = Uri.EscapeDataString(query);
 
             string url = string.Format("https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/{0}?subscription-key={1}&timezoneOffset=0&verbose=true&q={2}", luis_app_id, luis_subscription, query);
+            Debug.WriteLine("url = " + url);
             using (HttpClient client = new HttpClient())
             {
 
@@ -572,8 +574,8 @@ namespace KonaChatBot
 
         private String GetMultiLUIS(string query)
         {
-            String returnLuisName = "";
-            JObject Luis_before = new JObject();
+            
+
 
             Debug.WriteLine("LUIS NM : "+ LUIS_NM.Count());
             //for (int i = 0; i < LUIS_NM.Count(); i++)
@@ -584,6 +586,9 @@ namespace KonaChatBot
             int MAX = LUIS_APP_ID.Count(s => s != null);
             Array.Resize(ref LUIS_APP_ID, MAX);
 
+            String[] returnLuisName = new string[MAX];
+            JObject[] Luis_before = new JObject[MAX];
+            string LuisName = "";
             List<string[]> textList = new List<string[]>(MAX);
 
 
@@ -612,26 +617,29 @@ namespace KonaChatBot
                     Debug.WriteLine(async + " -- task1 결과 = " + task_luis.Result["topScoringIntent"]["score"]);
 
                     //최저 스코어 체크
-                    if ((float)task_luis.Result["topScoringIntent"]["score"] > Convert.ToDouble(LUIS_SCORE_LIMIT))
-                    {
-                        //이전 json 확인
-                        if (Luis_before.Count != 0)
-                        {
-                            //이전 topScoringIntent 비교
-                            if ((float)task_luis.Result["topScoringIntent"]["score"] >= (float)Luis_before["topScoringIntent"]["score"])
-                            {
-                                Luis = Luis_before;
-                                returnLuisName = textList[async][0];
-                                Debug.WriteLine("Luis_nm = " + returnLuisName);
-                            }
-                        }
-                        else
-                        {
-                            Luis_before = task_luis.Result;
-                            returnLuisName = textList[async][0];
-                        }
-                    }
+                    //if ((float)task_luis.Result["topScoringIntent"]["score"] > Convert.ToDouble(LUIS_SCORE_LIMIT))
+                    //{
+                    //    //이전 json 확인
+                    //    if (Luis_before.Count != 0)
+                    //    {
+                    //        //이전 topScoringIntent 비교
+                    //        if ((float)task_luis.Result["topScoringIntent"]["score"] > (float)Luis_before["topScoringIntent"]["score"])
+                    //        {
+                    //            Debug.WriteLine("task_luis = " + (float)task_luis.Result["topScoringIntent"]["score"]);
+                    //            Debug.WriteLine("Luis_before = " + (float)Luis_before["topScoringIntent"]["score"]);
+                    //            Luis = Luis_before;
+                    //            returnLuisName = textList[async][0];
+                    //        }
+                    //    }
+                    //    else
+                    //    {
+                    //        Luis_before = task_luis.Result;
+                    //        returnLuisName = textList[async][0];
+                    //    }
+                    //}
 
+                    Luis_before[async] = task_luis.Result;
+                    returnLuisName[async] = textList[async][0];
 
                 }
                 catch (AggregateException e)
@@ -642,11 +650,39 @@ namespace KonaChatBot
             });
             
             watch.Stop();
-            Luis = Luis_before;
-            Debug.WriteLine(watch.Elapsed.ToString());
-            Debug.WriteLine("Luis_nm = " + returnLuisName);
+            //Luis = Luis_before;
+
+            try
+            {
+                for (int i = 0; i < MAX; i++)
+                {
+                    Debug.WriteLine("i = " + Luis_before[i]["topScoringIntent"]["score"]);
+                    Debug.WriteLine("ij = " + returnLuisName[i]);
+                    if(i == 0)
+                    {
+                        Luis = Luis_before[0];
+                    } else
+                    {
+                        if ((float)Luis["topScoringIntent"]["score"] < (float)Luis_before[i]["topScoringIntent"]["score"])
+                        {
+                            Luis = Luis_before[i];
+                            LuisName = returnLuisName[i];
+
+                        }
+                    }
+
+                }
+            }
+            catch (IndexOutOfRangeException e)
+            {
+                Debug.WriteLine("error = " + e.Message);
+            }
+
+            //Debug.WriteLine(watch.Elapsed.ToString());
+            //Debug.WriteLine("Luis_SCORE = " + (float)Luis["topScoringIntent"]["score"]);
+            //Debug.WriteLine("Luis_nm = " + LuisName);
             //Debug.WriteLine("Luis = " + Luis);
-            return returnLuisName;
+            return LuisName;
         }
     }
 }

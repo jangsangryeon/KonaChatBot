@@ -101,18 +101,18 @@ namespace KonaChatBot.Dialogs
                 reply.Attachments.Clear();
 
                 //페이스북에서 남은 카드가 있는경우
-                if (beforeMent.Equals(orgMent) && channel.Equals("facebook") && fbLeftCardCnt > 0)
-                {
-                    reply.Attachments.Add(
-                        GetHeroCard(
-                        "", "",
-                        fbLeftCardCnt + "개의 컨테츠가 더 있습니다.",
-                        //new CardAction(ActionTypes.ImBack, "더 보기", value: userData.GetProperty<string>("FB_BEFORE_MENT")))
-                        new CardAction(ActionTypes.ImBack, "더 보기", value: beforeMent))
-                    );
-                    await context.PostAsync(reply);
-                    reply.Attachments.Clear();
-                }
+                //if (beforeMent.Equals(orgMent) && channel.Equals("facebook") && fbLeftCardCnt > 0)
+                //{
+                //    reply.Attachments.Add(
+                //        GetHeroCard(
+                //        "", "",
+                //        fbLeftCardCnt + "개의 컨테츠가 더 있습니다.",
+                //        //new CardAction(ActionTypes.ImBack, "더 보기", value: userData.GetProperty<string>("FB_BEFORE_MENT")))
+                //        new CardAction(ActionTypes.ImBack, "더 보기", value: beforeMent))
+                //    );
+                //    await context.PostAsync(reply);
+                //    reply.Attachments.Clear();
+                //}
             }
             context.ConversationData.SetValue("commonBeforeQustion", orgMent);
         }

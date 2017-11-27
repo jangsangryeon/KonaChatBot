@@ -482,7 +482,7 @@ namespace KonaChatBot.DB
                 conn.Open();
                 SqlCommand cmd = new SqlCommand();
                 cmd.Connection = conn;
-                cmd.CommandText += "SELECT LUIS_ID, INTENT_ID, ENTITIES_IDS FROM TBL_QUERY_ANALYSIS_RESULT WHERE QUERY = @msg";
+                cmd.CommandText += "SELECT LUIS_ID, LUIS_INTENT, LUIS_ENTITIES, ISNULL(LUIS_INTENT_SCORE,'') AS LUIS_INTENT_SCORE FROM TBL_QUERY_ANALYSIS_RESULT WHERE QUERY = @msg";
 
                 cmd.Parameters.AddWithValue("@msg", orgMent);
                 rdr = cmd.ExecuteReader(CommandBehavior.CloseConnection);
@@ -490,12 +490,15 @@ namespace KonaChatBot.DB
                 while (rdr.Read())
                 {
                     string luisId = rdr["LUIS_ID"] as String;
-                    string intentId = rdr["INTENT_ID"] as String;
-                    string entitiesId = rdr["ENTITIES_IDS"] as String;
+                    string intentId = rdr["LUIS_INTENT"] as String;
+                    string entitiesId = rdr["LUIS_ENTITIES"] as String;
+                    string luisScore = rdr["LUIS_INTENT_SCORE"] as String;
+                    
 
                     result.luisId = luisId;
                     result.luisIntent = intentId;
                     result.luisEntities = entitiesId;
+                    result.luisScore = luisScore;
                 }
             }
             return result;
@@ -513,7 +516,7 @@ namespace KonaChatBot.DB
                 conn.Open();
                 SqlCommand cmd = new SqlCommand();
                 cmd.Connection = conn;
-                cmd.CommandText += "SELECT LUIS_ID, LUIS_INTENT, LUIS_ENTITIES, DLG_ID, DLG_API_DEFINE, API_ID ";
+                cmd.CommandText += "SELECT LUIS_ID, LUIS_INTENT, LUIS_ENTITIES, ISNULL(DLG_ID,0) AS DLG_ID, DLG_API_DEFINE, API_ID ";
                 cmd.CommandText += "  FROM TBL_DLG_RELATION_LUIS                                                    ";
                 cmd.CommandText += " WHERE LUIS_INTENT = @intentId                                                 ";
                 cmd.CommandText += "   AND LUIS_ENTITIES = @entities                                                ";
@@ -657,7 +660,7 @@ namespace KonaChatBot.DB
 		// Query Analysis
 		// Insert user chat message for history and analysis
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		public int insertUserQuery(string korQuery, string intentID, string entitiesIDS, string intentScore, int luisID, char result, int appID)
+		public int insertUserQuery(string korQuery, string intentID, string entitiesIDS, string intentScore, String luisID, char result, int appID)
 		{
 			int dbResult = 0;
 			using (SqlConnection conn = new SqlConnection(connStr))

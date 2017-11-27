@@ -12,7 +12,6 @@ namespace KonaChatBot.Dialogs
     [Serializable]
     public class CommonDialog : IDialog<object>
     {
-        private List<RelationList> relationList;
         private String channel;
         private String orgMent;
         private readonly string TEXTDLG = "2";
@@ -20,21 +19,33 @@ namespace KonaChatBot.Dialogs
         private readonly string MEDIADLG = "4";
         private readonly int MAXFACEBOOKCARDS = 10;
 
-        public CommonDialog(List<RelationList> relationList, String channel, String orgMent)
+        public CommonDialog(String channel, String orgMent)
         {
-            this.relationList = relationList;
+            //this.relationList = relationList;
             this.orgMent = orgMent;
             this.channel = channel;
         }
 
-        public Task StartAsync(IDialogContext context)
-        {
-            context.Wait(MessageReceivedAsync);
+        //public Task StartAsync(IDialogContext context)
+        //{
+        //    context.Wait(MessageReceivedAsync);
 
-            return Task.CompletedTask;
+        //    return Task.CompletedTask;
+        //}
+
+        public async Task StartAsync(IDialogContext context)
+        {
+
+            context.Wait(this.MessageReceivedAsync);
         }
 
-        private async Task MessageReceivedAsync(IDialogContext context, IAwaitable<object> result)
+        //public async Task StartAsync(IDialogContext context)
+        //{
+        //    context.Wait(this.MessageReceivedAsync);
+        //}
+
+
+        private async Task MessageReceivedAsync(IDialogContext context, IAwaitable<IMessageActivity> result)
         {
             String beforeMent = "";
             int facebookpagecount = 1;
@@ -52,14 +63,15 @@ namespace KonaChatBot.Dialogs
                     fbLeftCardCnt++;
                 }
             }
+            
 
             var reply = context.MakeMessage();
             reply.AttachmentLayout = AttachmentLayoutTypes.Carousel;
             DbConnect db = new DbConnect();
 
-            for (int m = 0; m < relationList.Count; m++)
+            for (int m = 0; m < MessagesController.relationList.Count; m++)
             {
-                DialogList dlg = db.SelectDialog(relationList[m].dlgId);
+                DialogList dlg = db.SelectDialog(MessagesController.relationList[m].dlgId);
 
                 Attachment tempAttachment = new Attachment();
 
@@ -100,7 +112,8 @@ namespace KonaChatBot.Dialogs
                 await context.PostAsync(reply);
                 reply.Attachments.Clear();
 
-                //페이스북에서 남은 카드가 있는경우
+
+                ////페이스북에서 남은 카드가 있는경우
                 //if (beforeMent.Equals(orgMent) && channel.Equals("facebook") && fbLeftCardCnt > 0)
                 //{
                 //    reply.Attachments.Add(
@@ -115,6 +128,7 @@ namespace KonaChatBot.Dialogs
                 //}
             }
             context.ConversationData.SetValue("commonBeforeQustion", orgMent);
+            context.Done("");
         }
         private static Attachment GetHeroCard(string title, string subtitle, string text, CardImage cardImage, /*CardAction cardAction*/ List<CardAction> buttons)
         {

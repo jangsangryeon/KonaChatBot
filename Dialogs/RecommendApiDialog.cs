@@ -31,10 +31,10 @@
             string domainURL = "https://bottest.hyundai.com";
 
             //테스트용
-            if (message.Text.Equals("20~30대 여성"))
-            {
-                message.Text = "여성";
-            }
+            //if (message.Text.Equals("20~30대 여성"))
+            //{
+            //    message.Text = "여성";
+            //}
 
             //message 분류에 맞게 context.ConversationData 에 SetValue
             if (keywordGroup != "")

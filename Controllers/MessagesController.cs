@@ -54,6 +54,8 @@ namespace KonaChatBot
         public static int fbLeftCardCnt = 0;
         public static string FB_BEFORE_MENT = "";
 
+        public static List<RelationList> relationList = new List<RelationList>();
+
         public async Task<HttpResponseMessage> Post([FromBody]Activity activity)
         {
 
@@ -258,7 +260,7 @@ namespace KonaChatBot
                 }
 
                 //TBL_DLG_RELATION_LUIS 테이블에서 해당 다이얼로그 리스트 호출
-                List<RelationList> relationList = db.DefineTypeChk(cacheList.luisId, cacheList.luisIntent, cacheList.luisEntities);
+                relationList = db.DefineTypeChk(cacheList.luisId, cacheList.luisIntent, cacheList.luisEntities);
                 
                 //COMMON DIALG와 API 호출 분기
                 //relation 값이 있을 경우
@@ -291,8 +293,8 @@ namespace KonaChatBot
                     //답변이 일반 답변인 경우
                     else if (relationList[0].dlgApiDefine.Equals("D"))
                     {
-                        await Conversation.SendAsync(activity, () => new CommonDialog(relationList, activity.ChannelId, orgMent));
-
+                        await Conversation.SendAsync(activity, () => new CommonDialog( activity.ChannelId, orgMent));                        
+                        
                         DateTime endTime = DateTime.Now;
                         Debug.WriteLine("프로그램 수행시간 : {0}/ms", ((endTime - startTime).Milliseconds));
                         Debug.WriteLine("* activity.Type : " + activity.Type);
@@ -312,6 +314,7 @@ namespace KonaChatBot
                             Debug.WriteLine("HISTORY RESULT SUCCESS");
                             HistoryLog("HISTORY RESULT FAIL");
                         }
+                        //relationList.Clear();
                     }
                 }
                 //relation 값이 없을 경우 -> 네이버 기사 검색
@@ -660,6 +663,7 @@ namespace KonaChatBot
                     if(i == 0)
                     {
                         Luis = Luis_before[0];
+                        LuisName = returnLuisName[0];
                     } else
                     {
                         if ((float)Luis["topScoringIntent"]["score"] < (float)Luis_before[i]["topScoringIntent"]["score"])

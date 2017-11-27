@@ -993,7 +993,7 @@ namespace KonaChatBot.DB
 
                 cmd.CommandText += "SELECT  TOP 1 RECOMMEND_DLG_ID ";
                 cmd.CommandText += "FROM    TBL_RECOMMEND_RELATION ";
-                cmd.CommandText += "WHERE   ENTITY = @recommendValue ";
+                cmd.CommandText += "WHERE   ENTITY = LEFT(@recommendValue,CHARINDEX(',',@recommendValue)-1) ";
 
                 cmd.Parameters.AddWithValue("@recommendValue", recommendValue);
 

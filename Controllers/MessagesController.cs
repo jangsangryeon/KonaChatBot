@@ -207,7 +207,7 @@ namespace KonaChatBot
                 //인텐트 엔티티 검출
                 //캐시 체크
                 cashOrgMent = Regex.Replace(orgMent, @"[^a-zA-Z0-9ㄱ-힣-\s]", "", RegexOptions.Singleline);
-                CacheList cacheList = db.CacheChk(orgMent);                     // 캐시 체크
+                CacheList cacheList = db.CacheChk(orgMent.Replace(" ",""));                     // 캐시 체크
                 Debug.WriteLine("* luisId : " + cacheList.luisId);              // luisId
                 Debug.WriteLine("* Intent : " + cacheList.luisIntent);            // intentId
                 Debug.WriteLine("* Entity : " + cacheList.luisEntities);         // entitiesId

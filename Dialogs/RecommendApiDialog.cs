@@ -65,7 +65,8 @@
             //다이얼로그 아이디 추출
             int rcmdDlgId;
 
-            if (!string.IsNullOrEmpty(gender))
+            //if (!string.IsNullOrEmpty(gender) || !string.IsNullOrEmpty(age))
+            if(context.ConversationData.TryGetValue("Age", out age) || context.ConversationData.TryGetValue("Gender", out gender))
             {
                 //마지막 다이얼로그 아이디 입력
                 rcmdDlgId = 4;

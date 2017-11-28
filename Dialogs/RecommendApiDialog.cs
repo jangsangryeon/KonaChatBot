@@ -25,7 +25,8 @@
 
             DbConnect db = new DbConnect();
 
-            String keywordGroup = db.SelectedRecommendConfirm(message.Text);
+            //String keywordGroup = db.SelectedRecommendConfirm(message.Text);
+            RecommendConfirm rc = db.SelectedRecommendConfirm(message.Text);
 
             var reply = context.MakeMessage();
             string domainURL = "https://bottest.hyundai.com";
@@ -37,10 +38,10 @@
             //}
 
             //message 분류에 맞게 context.ConversationData 에 SetValue
-            if (keywordGroup != "")
+            if (rc.KEYWORDGROUP != "")
             {
                 //2depth 기타와 3depth 기타 구분
-                if (message.Text.Equals("기타"))
+                if (rc.KEYWORD.Equals("기타"))
                 {
                     context.ConversationData.TryGetValue("Important", out important);
                     if (!string.IsNullOrEmpty(important))
@@ -53,26 +54,29 @@
                     }
                     else
                     {
-                        context.ConversationData.SetValue(keywordGroup, message.Text);
+                        context.ConversationData.SetValue(rc.KEYWORDGROUP, rc.KEYWORD);
                     }                    
                 }
                 else
                 {
-                    context.ConversationData.SetValue(keywordGroup, message.Text);
+                    context.ConversationData.SetValue(rc.KEYWORDGROUP, rc.KEYWORD);
                 }
             }
 
             //다이얼로그 아이디 추출
             int rcmdDlgId;
-
-            //if (!string.IsNullOrEmpty(gender) || !string.IsNullOrEmpty(age))
-            if(context.ConversationData.TryGetValue("Age", out age) || context.ConversationData.TryGetValue("Gender", out gender))
+            context.ConversationData.TryGetValue("Use", out use);
+            context.ConversationData.TryGetValue("Important", out important);
+            context.ConversationData.TryGetValue("Age", out age);
+            context.ConversationData.TryGetValue("Gender", out gender);
+            if (!string.IsNullOrEmpty(gender) || !string.IsNullOrEmpty(age))
+            //if(context.ConversationData.TryGetValue("Age", out age) || context.ConversationData.TryGetValue("Gender", out gender))
             {
                 //마지막 다이얼로그 아이디 입력
                 rcmdDlgId = 4;
             } else
             {
-                rcmdDlgId = db.SelectedRecommendDlgId(message.Text);
+                rcmdDlgId = db.SelectedRecommendDlgId(rc.KEYWORD);
             }
             
             //MEDIA 데이터 추출
@@ -148,14 +152,14 @@
             }
 
             //추천 다이얼로그 출력
-            if (context.ConversationData.TryGetValue("Use", out use) && context.ConversationData.TryGetValue("Important", out important) && (context.ConversationData.TryGetValue("Age", out age)) || (context.ConversationData.TryGetValue("Gender", out gender)))
+            if (!string.IsNullOrEmpty(use) && !string.IsNullOrEmpty(important) && (!string.IsNullOrEmpty(age)) || (!string.IsNullOrEmpty(gender)))
             {
                 Debug.WriteLine("use, important, age, gender = " + use + "|||" + important + "|||" + age + "|||" + gender);
                 //이전 reply 초기화
                 reply.Attachments.Clear();
                 cardButtons.Clear();
 
-                List<RecommendList> RecommendList = db.SelectedRecommendList(use, important, gender, age);
+                List<RecommendList> RecommendList = db.SelectedRecommendList(use, important, gender, "");
                 RecommendList recommend = new RecommendList();
 
                 for (var i = 0; i < RecommendList.Count; i++)
@@ -245,6 +249,14 @@
                     }
                
                     reply.Attachments.Add(GetHeroCard("trim", subtitle, "", cardImage, cardButtons));
+                    context.ConversationData.SetValue("Use", "");
+                    context.ConversationData.SetValue("Important", "");
+                    context.ConversationData.SetValue("Gender", "");
+                    context.ConversationData.SetValue("Age", "");
+                    context.ConversationData.TryGetValue("Use", out use);
+                    context.ConversationData.TryGetValue("Important", out important);
+                    context.ConversationData.TryGetValue("Gender", out gender);
+                    context.ConversationData.TryGetValue("Age", out age);
                 }
                 
             }

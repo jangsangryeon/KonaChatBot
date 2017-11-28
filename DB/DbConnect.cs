@@ -943,11 +943,11 @@ namespace KonaChatBot.DB
         }
 
 
-        public string SelectedRecommendConfirm(string kr_query)
+        public RecommendConfirm SelectedRecommendConfirm(string kr_query)
         {
             SqlDataReader rdr = null;
 
-            string dlgKeywordgroup = "";
+            RecommendConfirm rc = new RecommendConfirm();
 
             using (SqlConnection conn = new SqlConnection(connStr))
             {
@@ -955,20 +955,20 @@ namespace KonaChatBot.DB
                 SqlCommand cmd = new SqlCommand();
                 cmd.Connection = conn;
 
-                cmd.CommandText += "SELECT	KEYWORD, KEYWORDGROUP ";
-                cmd.CommandText += "FROM TBL_RECOMMEND_KEYWORD ";
-                cmd.CommandText += "WHERE CHARINDEX(KEYWORD,@kr_query) > 0";
+                cmd.CommandText += "SELECT  TOP 1 KEYWORD, KEYWORDGROUP ";
+                cmd.CommandText += "FROM    TBL_RECOMMEND_KEYWORD ";
+                cmd.CommandText += "WHERE   CHARINDEX(KEYWORD,@kr_query) > 0";
 
                 cmd.Parameters.AddWithValue("@kr_query", kr_query);
 
-                rdr = cmd.ExecuteReader(CommandBehavior.CloseConnection);
-
+                rdr = cmd.ExecuteReader(CommandBehavior.CloseConnection);                
+                
                 try
                 {
                     while (rdr.Read())
                     {
-                        //string dlgKeyword = rdr["KEYWORD"] as string;
-                        dlgKeywordgroup = rdr["KEYWORDGROUP"] as string;
+                        rc.KEYWORD = rdr["KEYWORD"] as string;
+                        rc.KEYWORDGROUP = rdr["KEYWORDGROUP"] as string;
                     }
                 }
                 catch (Exception e)
@@ -976,7 +976,7 @@ namespace KonaChatBot.DB
                     Debug.WriteLine(e.Message);
                 }
             }
-            return dlgKeywordgroup;
+            return rc;
         }
 
         public int SelectedRecommendDlgId(string recommendValue)

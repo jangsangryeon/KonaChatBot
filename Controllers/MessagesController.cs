@@ -618,7 +618,7 @@ namespace KonaChatBot
             //병렬처리 시간 체크
             System.Diagnostics.Stopwatch watch = new System.Diagnostics.Stopwatch();
             watch.Start();
-            Parallel.For(0, MAX, new ParallelOptions { MaxDegreeOfParallelism = 20 }, async async =>
+            Parallel.For(0, MAX, new ParallelOptions { MaxDegreeOfParallelism = MAX }, async async =>
             {
 
                 //var task_luis = Task<JObject>.Run(async () => await GetIntentFromBotLUIS(textList[async][1], textList[async][2], textList[async][3]));

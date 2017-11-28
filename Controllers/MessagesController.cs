@@ -251,6 +251,20 @@ namespace KonaChatBot
                         luisEntities = luisEntities.Substring(0, luisEntities.LastIndexOf(","));
                         luisEntities = Regex.Replace(luisEntities, " ", "");
 
+                        //string[] luisEntities_array = new string[10];
+                        //luisEntities_array = Regex.Split(luisEntities, ",");
+                        //Array.Resize(ref luisEntities_array, luisEntities_array.Count(s => s != null));
+                        ////Array.Sort(luisEntities_array);
+                        ////Array.Reverse(luisEntities_array);
+                        //luisEntities_array = luisEntities_array.OrderByDescending(c => c).ToArray();
+                        //foreach (var str in luisEntities_array)
+                        //{
+                        //    Debug.WriteLine(str.ToString());
+                        //}
+                        //Debug.WriteLine("luisEntities_array = " + luisEntities_array);
+
+                        luisEntities = db.SelectArray(luisEntities);
+
                         Debug.WriteLine("luisEntities - 2 : " + luisEntities);
 
                         cacheList.luisIntent = (string)Luis["intents"][0]["intent"];

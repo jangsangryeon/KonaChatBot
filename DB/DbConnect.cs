@@ -1469,5 +1469,43 @@ namespace KonaChatBot.DB
             }
             return priceMediaDlgList;
         }
+
+        public string SelectArray(string entities)
+        {
+            SqlDataReader rdr = null;
+            string newMsg = "";
+
+            using (SqlConnection conn = new SqlConnection(connStr))
+            {
+                conn.Open();
+                SqlCommand cmd = new SqlCommand();
+                cmd.Connection = conn;
+
+                cmd.CommandText += "	SELECT ";
+                cmd.CommandText += "        ISNULL(MAX(CASE WHEN POS = 1 THEN VAL1 END), '') ";
+                cmd.CommandText += "        + ISNULL(MAX(CASE WHEN POS = 2 THEN ',' + VAL1 END), '') ";
+                cmd.CommandText += "        + ISNULL(MAX(CASE WHEN POS = 3 THEN ',' + VAL1 END), '') ";
+                cmd.CommandText += "        + ISNULL(MAX(CASE WHEN POS = 4 THEN ',' + VAL1 END), '') ";
+                cmd.CommandText += "        + ISNULL(MAX(CASE WHEN POS = 5 THEN ',' + VAL1 END), '') ";
+                cmd.CommandText += "        + ISNULL(MAX(CASE WHEN POS = 6 THEN ',' + VAL1 END), '') ";
+                cmd.CommandText += "        + ISNULL(MAX(CASE WHEN POS = 7 THEN ',' + VAL1 END), '') ";
+                cmd.CommandText += "        + ISNULL(MAX(CASE WHEN POS = 8 THEN ',' + VAL1 END), '') AS VAL ";
+                cmd.CommandText += "        FROM ";
+                cmd.CommandText += "            ( ";
+                cmd.CommandText += "                SELECT VAL1, POS ";
+                cmd.CommandText += "                FROM Split2(@entities, ',') ";
+                cmd.CommandText += "            ) A                             ";
+
+                cmd.Parameters.AddWithValue("@entities", entities);
+
+                rdr = cmd.ExecuteReader(CommandBehavior.CloseConnection);
+
+                while (rdr.Read())
+                {
+                    newMsg = rdr["VAL"] as string;
+                }
+            }
+            return newMsg;
+        }
     }
 }

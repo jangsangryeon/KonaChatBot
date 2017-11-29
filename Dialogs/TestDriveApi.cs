@@ -24,18 +24,18 @@ namespace KonaChatBot.Dialogs
             this.queryStr = queryStr;
         }
 
-        public Task StartAsync(IDialogContext context)
-        {
-            context.Wait(MessageReceivedAsync);
+        //public Task StartAsync(IDialogContext context)
+        //{
+        //    context.Wait(MessageReceivedAsync);
 
-            return Task.CompletedTask;
+        //    return Task.CompletedTask;
+        //}
+
+        public async Task StartAsync(IDialogContext context)
+        {
+            context.Wait(this.MessageReceivedAsync);
         }
 
-        //public async Task StartAsync(IDialogContext context)
-        //{
-        //    //await context.PostAsync(this.prompt);
-        //    context.Wait(this.MessageReceivedAsync);
-        //}
 
         private async Task MessageReceivedAsync(IDialogContext context, IAwaitable<object> result)
         {
@@ -48,7 +48,7 @@ namespace KonaChatBot.Dialogs
             //현재위치사용승인
             var activity = (Activity)await result;
             var connector = new ConnectorClient(new Uri(activity.ServiceUrl));
-            queryStr = activity.Text;
+            queryStr = MessagesController.queryStr;
 
             var facebooklocation = activity.Entities?.Where(t => t.Type == "Place").Select(t => t.GetAs<Place>()).FirstOrDefault();
             if (facebooklocation != null)
@@ -256,7 +256,8 @@ namespace KonaChatBot.Dialogs
                 }
 
             }
-            context.Wait(this.MessageReceivedAsync);
+            //context.Wait(this.MessageReceivedAsync);
+            context.Done("");
         }
 
 

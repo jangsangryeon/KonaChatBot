@@ -26,22 +26,25 @@ namespace KonaChatBot.Dialogs
             this.channel = channel;
         }
 
-        public Task StartAsync(IDialogContext context)
-        {
-            context.Wait(MessageReceivedAsync);
-
-            return Task.CompletedTask;
-        }
-
-
-        //public async Task StartAsync(IDialogContext context)
+        //public Task StartAsync(IDialogContext context)
         //{
-        //    context.Wait(this.MessageReceivedAsync);
+        //    context.Wait(MessageReceivedAsync);
+
+        //    return Task.CompletedTask;
         //}
+
+
+        public async Task StartAsync(IDialogContext context)
+        {
+            context.Wait(this.MessageReceivedAsync);
+        }
 
 
         private async Task MessageReceivedAsync(IDialogContext context, IAwaitable<IMessageActivity> result)
         {
+            var activity = (Activity)await result;
+            channel = activity.ChannelId;
+            orgMent = MessagesController.queryStr;
             String beforeMent = "";
             int facebookpagecount = 1;
             int fbLeftCardCnt = 0;
@@ -126,7 +129,8 @@ namespace KonaChatBot.Dialogs
             //context.Done(true);
             //context.Wait(this.MessageReceivedAsync);
             //context.Done<object>(new object());
-            context.Done("complete");
+            context.Done("");
+
 
         }
         private static Attachment GetHeroCard(string title, string subtitle, string text, CardImage cardImage, /*CardAction cardAction*/ List<CardAction> buttons, string cardDivision, string cardValue)

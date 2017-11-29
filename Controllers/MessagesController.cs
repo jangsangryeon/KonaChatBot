@@ -55,6 +55,11 @@ namespace KonaChatBot
         public static string FB_BEFORE_MENT = "";
 
         public static List<RelationList> relationList = new List<RelationList>();
+        public static string luisId = "";
+        public static string luisIntent = "";
+        public static string luisEntities = "";
+        public static string queryStr = "";
+
 
         public async Task<HttpResponseMessage> Post([FromBody]Activity activity)
         {
@@ -273,79 +278,85 @@ namespace KonaChatBot
                     }
                     
                 }
+                luisId = cacheList.luisId;
+                luisIntent = cacheList.luisIntent;
+                luisEntities = cacheList.luisEntities;
 
-                //TBL_DLG_RELATION_LUIS 테이블에서 해당 다이얼로그 리스트 호출
-                relationList = db.DefineTypeChk(cacheList.luisId, cacheList.luisIntent, cacheList.luisEntities);
-                
-                //COMMON DIALG와 API 호출 분기
-                //relation 값이 있을 경우
+                queryStr = orgMent;
+        await Conversation.SendAsync(activity, () => new RootDialog(cacheList.luisId, cacheList.luisIntent, cacheList.luisEntities));
 
-                if (relationList.Count > 0)
-                {
-                    //답변이 시승 rest api 호출인 경우
-                    if (relationList[0].dlgApiDefine.Equals("api testdrive"))
-                    {
-                        //await Conversation.SendAsync(activity, () => new TestDriveApi(cacheList.luisIntent, cacheList.luisEntities, orgMent));
-                        await Conversation.SendAsync(activity, () => new TestDriveApi(orgMent));
-                        
-                    }
-                    //답변이 가격 rest api 호출인 경우
-                    else if (relationList[0].dlgApiDefine.Equals("api quot"))
-                    {
-                        await Conversation.SendAsync(activity, () => new PriceApi(cacheList.luisIntent, cacheList.luisEntities, orgMent));
-                    }
-                    //답변이 추천 rest api 호출인 경우
-                    else if (relationList[0].dlgApiDefine.Equals("api recommend"))
-                    {
-                        if (activity.ChannelId != "facebook")
-                        {
-                            //await Conversation.SendAsync(activity, () => new TestDriveApi(cacheList.luisIntent, cacheList.luisEntities, orgMent));
-                            await Conversation.SendAsync(activity, () => new RecommendApiDialog());
-                        } else
-                        {
-                            //facebook일 경우 처리
-                        }
-                    }
-                    //답변이 일반 답변인 경우
-                    else if (relationList[0].dlgApiDefine.Equals("D"))
-                    {
-                        await Conversation.SendAsync(activity, () => new CommonDialog( activity.ChannelId, orgMent));                        
-                        
-                        DateTime endTime = DateTime.Now;
-                        Debug.WriteLine("프로그램 수행시간 : {0}/ms", ((endTime - startTime).Milliseconds));
-                        Debug.WriteLine("* activity.Type : " + activity.Type);
-                        Debug.WriteLine("* activity.Recipient.Id : " + activity.Recipient.Id);
-                        Debug.WriteLine("* activity.ServiceUrl : " + activity.ServiceUrl);
+                ////TBL_DLG_RELATION_LUIS 테이블에서 해당 다이얼로그 리스트 호출
+                //relationList = db.DefineTypeChk(cacheList.luisId, cacheList.luisIntent, cacheList.luisEntities);
 
-                        int dbResult = db.insertUserQuery(cashOrgMent, cacheList.luisIntent, cacheList.luisEntities, "0", cacheList.luisId, 'H',0);
-                        Debug.WriteLine("INSERT QUERY RESULT : " + dbResult.ToString());
+                ////COMMON DIALG와 API 호출 분기
+                ////relation 값이 있을 경우
 
-                        if (db.insertHistory(activity.Conversation.Id, activity.Text, relationList[0].dlgId.ToString(), activity.ChannelId, ((endTime - startTime).Milliseconds), 0) > 0)
-                        {
-                            Debug.WriteLine("HISTORY RESULT SUCCESS");
-                            HistoryLog("HISTORY RESULT SUCCESS");
-                        }
-                        else
-                        {
-                            Debug.WriteLine("HISTORY RESULT SUCCESS");
-                            HistoryLog("HISTORY RESULT FAIL");
-                        }
-                        //relationList.Clear();
-                    }
-                }
-                //relation 값이 없을 경우 -> 네이버 기사 검색
-                else
-                {
-                    //네이버 검색
-                    await Conversation.SendAsync(activity, () => new IntentNoneDialog("", "", startTime, "", ""));
-                }
+                //if (relationList.Count > 0)
+                //{
+                //    //답변이 시승 rest api 호출인 경우
+                //    if (relationList[0].dlgApiDefine.Equals("api testdrive"))
+                //    {
+                //        //await Conversation.SendAsync(activity, () => new TestDriveApi(cacheList.luisIntent, cacheList.luisEntities, orgMent));
+                //        await Conversation.SendAsync(activity, () => new TestDriveApi(orgMent));
+
+                //    }
+                //    //답변이 가격 rest api 호출인 경우
+                //    else if (relationList[0].dlgApiDefine.Equals("api quot"))
+                //    {
+                //        await Conversation.SendAsync(activity, () => new PriceApi(cacheList.luisIntent, cacheList.luisEntities, orgMent));
+                //    }
+                //    //답변이 추천 rest api 호출인 경우
+                //    else if (relationList[0].dlgApiDefine.Equals("api recommend"))
+                //    {
+                //        if (activity.ChannelId != "facebook")
+                //        {
+                //            //await Conversation.SendAsync(activity, () => new TestDriveApi(cacheList.luisIntent, cacheList.luisEntities, orgMent));
+                //            await Conversation.SendAsync(activity, () => new RecommendApiDialog());
+                //        } else
+                //        {
+                //            //facebook일 경우 처리
+                //        }
+                //    }
+                //    //답변이 일반 답변인 경우
+                //    else if (relationList[0].dlgApiDefine.Equals("D"))
+                //    {
+                //        await Conversation.SendAsync(activity, () => new CommonDialog( activity.ChannelId, orgMent));                        
+
+                //        DateTime endTime = DateTime.Now;
+                //        Debug.WriteLine("프로그램 수행시간 : {0}/ms", ((endTime - startTime).Milliseconds));
+                //        Debug.WriteLine("* activity.Type : " + activity.Type);
+                //        Debug.WriteLine("* activity.Recipient.Id : " + activity.Recipient.Id);
+                //        Debug.WriteLine("* activity.ServiceUrl : " + activity.ServiceUrl);
+
+                //        int dbResult = db.insertUserQuery(cashOrgMent, cacheList.luisIntent, cacheList.luisEntities, "0", cacheList.luisId, 'H',0);
+                //        Debug.WriteLine("INSERT QUERY RESULT : " + dbResult.ToString());
+
+                //        if (db.insertHistory(activity.Conversation.Id, activity.Text, relationList[0].dlgId.ToString(), activity.ChannelId, ((endTime - startTime).Milliseconds), 0) > 0)
+                //        {
+                //            Debug.WriteLine("HISTORY RESULT SUCCESS");
+                //            HistoryLog("HISTORY RESULT SUCCESS");
+                //        }
+                //        else
+                //        {
+                //            Debug.WriteLine("HISTORY RESULT SUCCESS");
+                //            HistoryLog("HISTORY RESULT FAIL");
+                //        }
+                //        //relationList.Clear();
+                //    }
+                //}
+                ////relation 값이 없을 경우 -> 네이버 기사 검색
+                //else
+                //{
+                //    //네이버 검색
+                //    await Conversation.SendAsync(activity, () => new IntentNoneDialog("", "", startTime, "", ""));
+                //}
             }
             else
             {
                 HandleSystemMessage(activity);
             }
-            //return response;
-            return new HttpResponseMessage(System.Net.HttpStatusCode.Accepted);
+            return response;
+            
         }
 
         private Attachment getAttachmentFromDialog(DialogList dlg)

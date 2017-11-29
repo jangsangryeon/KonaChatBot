@@ -22,6 +22,7 @@ namespace KonaChatBot.Dialogs
         public PriceApi(string luis_intent, string entitiesStr, string queryStr)
         {
             this.luis_intent = luis_intent;
+
             //엔티티 comma split
             if (entitiesStr != null && !entitiesStr.Equals(""))
             {
@@ -30,11 +31,15 @@ namespace KonaChatBot.Dialogs
             this.queryStr = queryStr;
         }
 
-        public Task StartAsync(IDialogContext context)
-        {
-            context.Wait(MessageReceivedAsync);
+        //public Task StartAsync(IDialogContext context)
+        //{
+        //    context.Wait(MessageReceivedAsync);
 
-            return Task.CompletedTask;
+        //    return Task.CompletedTask;
+        //}
+        public async Task StartAsync(IDialogContext context)
+        {
+            context.Wait(this.MessageReceivedAsync);
         }
 
         private async Task MessageReceivedAsync(IDialogContext context, IAwaitable<object> result)
@@ -529,7 +534,7 @@ namespace KonaChatBot.Dialogs
                 await context.PostAsync(reply);
             }
 
-
+            context.Done("");
             //await context.PostAsync(returndialog);
 
             // 변수 선언

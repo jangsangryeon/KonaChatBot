@@ -125,6 +125,7 @@
     <Compile Include="Dialogs\CommonDialog.cs" />
     <Compile Include="Dialogs\RecommendApiDialog.cs" />
     <Compile Include="Dialogs\RecommendContextConstants.cs" />
+    <Compile Include="Dialogs\RootDialog.cs" />
     <Compile Include="Dialogs\TestDriveApi.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>

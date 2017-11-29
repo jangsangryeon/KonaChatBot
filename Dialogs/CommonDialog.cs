@@ -26,18 +26,13 @@ namespace KonaChatBot.Dialogs
             this.channel = channel;
         }
 
-        //public Task StartAsync(IDialogContext context)
-        //{
-        //    context.Wait(MessageReceivedAsync);
-
-        //    return Task.CompletedTask;
-        //}
-
-        public async Task StartAsync(IDialogContext context)
+        public Task StartAsync(IDialogContext context)
         {
+            context.Wait(MessageReceivedAsync);
 
-            context.Wait(this.MessageReceivedAsync);
+            return Task.CompletedTask;
         }
+
 
         //public async Task StartAsync(IDialogContext context)
         //{
@@ -128,7 +123,11 @@ namespace KonaChatBot.Dialogs
                 //}
             }
             context.ConversationData.SetValue("commonBeforeQustion", orgMent);
-            context.Done("");
+            //context.Done(true);
+            //context.Wait(this.MessageReceivedAsync);
+            //context.Done<object>(new object());
+            context.Done("complete");
+
         }
         private static Attachment GetHeroCard(string title, string subtitle, string text, CardImage cardImage, /*CardAction cardAction*/ List<CardAction> buttons, string cardDivision, string cardValue)
         {

@@ -71,7 +71,11 @@ namespace KonaChatBot
                 
                 //파라메터 호출
                 Array.Clear(LUIS_NM, 0, 10);
-                Array.Clear(LUIS_APP_ID, 0, 10);
+                if(LUIS_APP_ID.Count(s => s != null) > 0)
+                {
+                    string[] LUIS_APP_ID = new string[10];
+                }
+                //Array.Clear(LUIS_APP_ID, 0, 10);
                 List<ConfList> confList = db.SelectConfig();
 
                 for (int i = 0; i < confList.Count; i++)
@@ -283,6 +287,7 @@ namespace KonaChatBot
                     {
                         //await Conversation.SendAsync(activity, () => new TestDriveApi(cacheList.luisIntent, cacheList.luisEntities, orgMent));
                         await Conversation.SendAsync(activity, () => new TestDriveApi(orgMent));
+                        
                     }
                     //답변이 가격 rest api 호출인 경우
                     else if (relationList[0].dlgApiDefine.Equals("api quot"))
@@ -339,7 +344,8 @@ namespace KonaChatBot
             {
                 HandleSystemMessage(activity);
             }
-            return response;
+            //return response;
+            return new HttpResponseMessage(System.Net.HttpStatusCode.Accepted);
         }
 
         private Attachment getAttachmentFromDialog(DialogList dlg)

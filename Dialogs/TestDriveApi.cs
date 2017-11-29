@@ -31,6 +31,12 @@ namespace KonaChatBot.Dialogs
             return Task.CompletedTask;
         }
 
+        //public async Task StartAsync(IDialogContext context)
+        //{
+        //    //await context.PostAsync(this.prompt);
+        //    context.Wait(this.MessageReceivedAsync);
+        //}
+
         private async Task MessageReceivedAsync(IDialogContext context, IAwaitable<object> result)
         {
             //지역변수 인텐트 엔티티로 결과값 조회
@@ -250,6 +256,7 @@ namespace KonaChatBot.Dialogs
                 }
 
             }
+            context.Wait(this.MessageReceivedAsync);
         }
 
 

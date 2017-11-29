@@ -257,7 +257,7 @@ namespace KonaChatBot.DB
                         else if (dlg.dlgType.Equals(MEDIADLG))
                         {
                             cmd2.CommandText = "SELECT CARD_TITLE, CARD_TEXT, MEDIA_URL," +
-                                    "BTN_1_TYPE, BTN_1_TITLE, BTN_1_CONTEXT, BTN_2_TYPE, BTN_2_TITLE, BTN_2_CONTEXT, BTN_3_TYPE, BTN_3_TITLE, BTN_3_CONTEXT, BTN_4_TYPE, BTN_4_TITLE, BTN_4_CONTEXT " +
+                                    "BTN_1_TYPE, BTN_1_TITLE, BTN_1_CONTEXT, BTN_2_TYPE, BTN_2_TITLE, BTN_2_CONTEXT, BTN_3_TYPE, BTN_3_TITLE, BTN_3_CONTEXT, BTN_4_TYPE, BTN_4_TITLE, BTN_4_CONTEXT , CARD_DIVISION, CARD_VALUE " +
                                     "FROM TBL_DLG_MEDIA WHERE DLG_ID = @dlgID AND USE_YN = 'Y'";
                             cmd2.Parameters.AddWithValue("@dlgID", dlg.dlgId);
                             rdr2 = cmd2.ExecuteReader(CommandBehavior.CloseConnection);
@@ -279,6 +279,8 @@ namespace KonaChatBot.DB
                                 dlg.btn4Type = rdr2["BTN_4_TYPE"] as string;
                                 dlg.btn4Title = rdr2["BTN_4_TITLE"] as string;
                                 dlg.btn4Context = rdr2["BTN_4_CONTEXT"] as string;
+                                dlg.cardDivision = rdr2["CARD_DIVISION"] as string;
+                                dlg.cardValue = rdr2["CARD_VALUE"] as string;
                             }
                         }
 
@@ -1246,23 +1248,31 @@ namespace KonaChatBot.DB
         }
 
         //견적 쿼리
+
         public List<KeywordGroup> SelectKeywordGroupList(String[] entities)
         {
             SqlDataReader rdr = null;
+
             List<KeywordGroup> keywordgrouplist = new List<KeywordGroup>();
+
             using (SqlConnection conn = new SqlConnection(connStr))
             {
                 conn.Open();
                 SqlCommand cmd = new SqlCommand();
                 cmd.Connection = conn;
+
                 cmd.CommandText += "SELECT KEYWORD, KEYWORDGROUP, KEYWORDDETAIL FROM TBL_KONA_PRICE_KEYWORD WHERE KEYWORD = '" + entities[0].ToString() + "'";
+
 
                 for (int i = 1; i < entities.Length; i++)
                 {
                     cmd.CommandText += "OR KEYWORD = '" + entities[i].ToString() + "'";
                 }
+
                 Debug.WriteLine("price keyword group query : " + cmd.CommandText);
+
                 rdr = cmd.ExecuteReader(CommandBehavior.CloseConnection);
+
                 while (rdr.Read())
                 {
                     KeywordGroup keywordgroup = new KeywordGroup();
@@ -1275,88 +1285,152 @@ namespace KonaChatBot.DB
             return keywordgrouplist;
         }
 
+
         //견적 질문 -> 엔진 모델 보여주는 데이터
         public List<PriceModelList> SelectPriceModelList()
         {
             SqlDataReader rdr = null;
+
             List<PriceModelList> priceModelList = new List<PriceModelList>();
+
             using (SqlConnection conn = new SqlConnection(connStr))
             {
                 conn.Open();
                 SqlCommand cmd = new SqlCommand();
                 cmd.Connection = conn;
+
                 cmd.CommandText += "sp_selectpricemodel";
+
                 cmd.CommandType = CommandType.StoredProcedure;
+
                 Debug.WriteLine("query : " + cmd.CommandText);
+
                 rdr = cmd.ExecuteReader(CommandBehavior.CloseConnection);
+
                 while (rdr.Read())
                 {
                     string modelNm = rdr["MODEL_NM"] as string;
                     string imgNm = rdr["IMG_NM"] as string;
 
+
                     PriceModelList model = new PriceModelList();
                     model.modelNm = modelNm;
                     model.imgNm = imgNm;
+
                     priceModelList.Add(model);
                 }
             }
             return priceModelList;
         }
 
+
+
+
         public List<Price_API_DLG> SelectPriceList_API_DLG(String keywordGroup)
         {
             SqlDataReader rdr = null;
+
             List<Price_API_DLG> priceList_api_dlg = new List<Price_API_DLG>();
+
             using (SqlConnection conn = new SqlConnection(connStr))
             {
                 conn.Open();
                 SqlCommand cmd = new SqlCommand();
                 cmd.Connection = conn;
+
                 cmd.CommandText += " SELECT  ";
-                cmd.CommandText += "   A.KEYWORD_GROUP AS KEYWORD_GROUP ";
-                cmd.CommandText += "     ,B.PRICE_DLG_ID AS PRICE_DLG_ID ";
-                cmd.CommandText += "     ,CASE WHEN B.DLG_TYPE = '3' THEN 'CARD'  ";
-                cmd.CommandText += "   WHEN B.DLG_TYPE = '4' THEN 'MEDIA' ";
-                cmd.CommandText += "   ELSE 'TEXT' ";
-                cmd.CommandText += "   END DLG_TYPE ";
+                cmd.CommandText += " 		A.KEYWORD_GROUP AS KEYWORD_GROUP ";
+                cmd.CommandText += " 	   ,B.PRICE_DLG_ID AS PRICE_DLG_ID ";
+                cmd.CommandText += " 	   ,CASE WHEN B.DLG_TYPE = '3' THEN 'CARD'  ";
+                cmd.CommandText += " 		WHEN B.DLG_TYPE = '4' THEN 'MEDIA' ";
+                cmd.CommandText += " 		ELSE 'TEXT' ";
+                cmd.CommandText += " 		END DLG_TYPE ";
                 cmd.CommandText += "  FROM TBL_PRICE_RELATION A, TBL_PRICE_DLG B ";
                 cmd.CommandText += " WHERE A.KEYWORD_GROUP = @keywordGroup  ";
                 cmd.CommandText += "   AND A.PRICE_DLG_ID = B.PRICE_DLG_ID ";
                 cmd.CommandText += " ORDER BY A.DLG_ORDER_NO ";
+
                 cmd.Parameters.AddWithValue("@keywordGroup", keywordGroup);
+
                 Debug.WriteLine("query : " + cmd.CommandText);
+
                 rdr = cmd.ExecuteReader(CommandBehavior.CloseConnection);
+
                 while (rdr.Read())
                 {
                     string keywordGrp = rdr["KEYWORD_GROUP"] as string;
                     int priceDlgId = Convert.ToInt32(rdr["PRICE_DLG_ID"]);
                     string dlgType = rdr["DLG_TYPE"] as string;
+
                     Price_API_DLG dlg = new Price_API_DLG();
                     dlg.keywordGrp = keywordGrp;
                     dlg.priceDlgId = priceDlgId;
                     dlg.dlgType = dlgType;
+
                     priceList_api_dlg.Add(dlg);
                 }
             }
             return priceList_api_dlg;
         }
 
-        // 견적 text 다이알로그 select
-        public List<PriceTextDlgList> SelectPriceTextDlgList(int dlgId)
+
+        //견적 모델 명 SELECT
+        public string SelectPriceModelValue(string group, string tempStr)
         {
             SqlDataReader rdr = null;
-            List<PriceTextDlgList> priceTextDlgList = new List<PriceTextDlgList>();
+
+            string result = "";
+
             using (SqlConnection conn = new SqlConnection(connStr))
             {
                 conn.Open();
                 SqlCommand cmd = new SqlCommand();
                 cmd.Connection = conn;
-                cmd.CommandText += " SELECT TEXT_DLG_ID, PRICE_DLG_ID, CARD_TITLE, CARD_TEXT, CARD_TEXT_DESCRIPTION ";
+
+                cmd.CommandText += " SELECT MAX(CAR_TRIM_NM) CAR_TRIM_NM FROM FN_PRICE_VALUE (@group, @tempStr) ";
+
+
+                cmd.Parameters.AddWithValue("@group", group);
+                cmd.Parameters.AddWithValue("@tempStr", tempStr);
+
+                Debug.WriteLine("query : " + cmd.CommandText);
+
+                rdr = cmd.ExecuteReader(CommandBehavior.CloseConnection);
+
+                while (rdr.Read())
+                {
+                    result = rdr["CAR_TRIM_NM"] as string;
+                }
+            }
+            return result;
+        }
+
+        // 견적 text 다이알로그 select
+        public List<PriceTextDlgList> SelectPriceTextDlgList(int dlgId, string carTrimNm)
+        {
+            SqlDataReader rdr = null;
+
+            List<PriceTextDlgList> priceTextDlgList = new List<PriceTextDlgList>();
+
+            using (SqlConnection conn = new SqlConnection(connStr))
+            {
+                conn.Open();
+                SqlCommand cmd = new SqlCommand();
+                cmd.Connection = conn;
+
+                cmd.CommandText += " SELECT TEXT_DLG_ID, PRICE_DLG_ID, CARD_TITLE, ";
+                cmd.CommandText += " REPLACE(CARD_TEXT , 'CALL(모델명)',@carTrimNm) CARD_TEXT, ";
+                cmd.CommandText += " CARD_TEXT_DESCRIPTION ";
                 cmd.CommandText += " FROM TBL_PRICE_DLG_TEXT ";
                 cmd.CommandText += " WHERE PRICE_DLG_ID = @priceDlgId ";
+
+                cmd.Parameters.AddWithValue("@carTrimNm", carTrimNm);
                 cmd.Parameters.AddWithValue("@priceDlgId", dlgId);
+
                 Debug.WriteLine("query : " + cmd.CommandText);
+
                 rdr = cmd.ExecuteReader(CommandBehavior.CloseConnection);
+
                 while (rdr.Read())
                 {
                     int textDlgId = Convert.ToInt32(rdr["TEXT_DLG_ID"]);
@@ -1365,63 +1439,70 @@ namespace KonaChatBot.DB
                     string cardText = rdr["CARD_TEXT"] as string;
                     string cardTextDesc = rdr["CARD_TEXT_DESCRIPTION"] as string;
 
+
                     PriceTextDlgList textDlg = new PriceTextDlgList();
                     textDlg.textDlgId = textDlgId;
                     textDlg.priceDlgId = priceDlgId;
                     textDlg.cardTitle = cardTitle;
                     textDlg.cardText = cardText;
                     textDlg.cardTextDesc = cardTextDesc;
+
                     priceTextDlgList.Add(textDlg);
                 }
             }
             return priceTextDlgList;
         }
+
         // 견적 미디어 다이알로그 select
         public List<PriceMediaDlgList> SelectPriceMediaDlgList(int dlgId, string group, string tempStr)
         {
             SqlDataReader rdr = null;
+
             List<PriceMediaDlgList> priceMediaDlgList = new List<PriceMediaDlgList>();
+
             using (SqlConnection conn = new SqlConnection(connStr))
             {
                 conn.Open();
                 SqlCommand cmd = new SqlCommand();
                 cmd.Connection = conn;
+
                 cmd.CommandText += " SELECT                                            ";
-                //cmd.CommandText += "        CASE WHEN TUIX IS NULL THEN '' + FUEL               ";
-                //cmd.CommandText += "             WHEN TUIX IS NOT NULL THEN TUIX + '_' + FUEL   ";
-                //cmd.CommandText += "         END ENGINE                                         ";
-                //cmd.CommandText += "        , CASE WHEN TUIX IS NULL THEN REPLACE('' + CARTRIM,' ','')  ";
-                //cmd.CommandText += "               WHEN TUIX IS NOT NULL THEN REPLACE(TUIX + '' + CARTRIM, ' ', '') ";
-                //cmd.CommandText += "         END TRIM                                 ";
-                cmd.CommandText += "   TRIM_NM                                 ";
-                cmd.CommandText += "   ,ENGINE                             ";
-                cmd.CommandText += "   ,CARD_TITLE                                 ";
-                cmd.CommandText += "   ,CARD_SUBTITLE                             ";
-                cmd.CommandText += "   ,CARD_TEXT                                 ";
-                cmd.CommandText += "   ,MEDIA_URL                                 ";
-                cmd.CommandText += "   ,BTN_1_TYPE                                ";
-                cmd.CommandText += "   ,BTN_1_TITLE                               ";
-                cmd.CommandText += "   ,BTN_1_CONTEXT                             ";
-                cmd.CommandText += "   ,BTN_2_TYPE                                ";
-                cmd.CommandText += "   ,BTN_2_TITLE                               ";
-                cmd.CommandText += "   ,BTN_2_CONTEXT                             ";
-                cmd.CommandText += "   ,BTN_3_TYPE                                ";
-                cmd.CommandText += "   ,BTN_3_TITLE                               ";
-                cmd.CommandText += "   ,BTN_3_CONTEXT                             ";
-                cmd.CommandText += "   ,BTN_4_TYPE                                ";
-                cmd.CommandText += "   ,BTN_4_TITLE                               ";
-                cmd.CommandText += "   ,BTN_4_CONTEXT                             ";
-                cmd.CommandText += "   ,CARD_DIVISION                             ";
-                cmd.CommandText += "   ,CARD_VALUE                                ";
-                cmd.CommandText += "  FROM FN_PRICE_MEDIA_DLG (@dlgId,@group,@tempStr)     ";
+                cmd.CommandText += " 		CAR_TRIM_NM                                 ";
+                cmd.CommandText += " 		,TRIM_NM                                 ";
+                cmd.CommandText += " 		,ENGINE                             ";
+                cmd.CommandText += " 		,CARD_TITLE                                 ";
+                cmd.CommandText += " 		,CARD_SUBTITLE                             ";
+                cmd.CommandText += " 		,CARD_TEXT                                 ";
+                cmd.CommandText += " 		,MEDIA_URL                                 ";
+                cmd.CommandText += " 		,BTN_1_TYPE                                ";
+                cmd.CommandText += " 		,BTN_1_TITLE                               ";
+                cmd.CommandText += " 		,BTN_1_CONTEXT                             ";
+                cmd.CommandText += " 		,BTN_2_TYPE                                ";
+                cmd.CommandText += " 		,BTN_2_TITLE                               ";
+                cmd.CommandText += " 		,BTN_2_CONTEXT                             ";
+                cmd.CommandText += " 		,BTN_3_TYPE                                ";
+                cmd.CommandText += " 		,BTN_3_TITLE                               ";
+                cmd.CommandText += " 		,BTN_3_CONTEXT                             ";
+                cmd.CommandText += " 		,BTN_4_TYPE                                ";
+                cmd.CommandText += " 		,BTN_4_TITLE                               ";
+                cmd.CommandText += " 		,BTN_4_CONTEXT                             ";
+                cmd.CommandText += " 		,CARD_DIVISION                             ";
+                cmd.CommandText += " 		,CARD_VALUE                                ";
+                cmd.CommandText += "  FROM FN_PRICE_MEDIA_DLG (@dlgId,@group,@tempStr) ";
+
 
                 cmd.Parameters.AddWithValue("@dlgId", dlgId);
                 cmd.Parameters.AddWithValue("@group", group);
                 cmd.Parameters.AddWithValue("@tempStr", tempStr);
+
                 Debug.WriteLine("query : " + cmd.CommandText);
+
                 rdr = cmd.ExecuteReader(CommandBehavior.CloseConnection);
+
                 while (rdr.Read())
                 {
+
+                    string carTrimNm = rdr["CAR_TRIM_NM"] as string;
                     string trim = rdr["TRIM_NM"] as string;
                     string engine = rdr["ENGINE"] as string;
                     string cardTitle = rdr["CARD_TITLE"] as string;
@@ -1444,6 +1525,7 @@ namespace KonaChatBot.DB
                     string cardValue = rdr["CARD_VALUE"] as string;
 
                     PriceMediaDlgList mediaDlg = new PriceMediaDlgList();
+                    mediaDlg.carTrimNm = carTrimNm;
                     mediaDlg.trim = trim;
                     mediaDlg.engine = engine;
                     mediaDlg.mediaUrl = mediaUrl;
@@ -1464,6 +1546,7 @@ namespace KonaChatBot.DB
                     mediaDlg.btn4Context = btn4Context;
                     mediaDlg.cardDivision = cardDivision;
                     mediaDlg.cardValue = cardValue;
+
                     priceMediaDlgList.Add(mediaDlg);
                 }
             }

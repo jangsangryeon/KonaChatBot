@@ -28,6 +28,8 @@ namespace KonaChatBot.Models
         public string btn4Type;
         public string btn4Title;
         public string btn4Context;
+        public string cardDivision;
+        public string cardValue;
         //card
         public List<CardList> dialogCard;
     }

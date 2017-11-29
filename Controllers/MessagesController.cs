@@ -206,12 +206,9 @@ namespace KonaChatBot
 
                 //인텐트 엔티티 검출
                 //캐시 체크
-                cashOrgMent = Regex.Replace(orgMent, @"[^a-zA-Z0-9ㄱ-힣-\s]", "", RegexOptions.Singleline);
-                CacheList cacheList = db.CacheChk(orgMent.Replace(" ",""));                     // 캐시 체크
-                Debug.WriteLine("* luisId : " + cacheList.luisId);              // luisId
-                Debug.WriteLine("* Intent : " + cacheList.luisIntent);            // intentId
-                Debug.WriteLine("* Entity : " + cacheList.luisEntities);         // entitiesId
-                Debug.WriteLine("* Score : " + cacheList.luisScore);         // entitiesId
+                cashOrgMent = Regex.Replace(orgMent, @"[^a-zA-Z0-9ㄱ-힣]", "", RegexOptions.Singleline);
+                CacheList cacheList = db.CacheChk(cashOrgMent.Replace(" ",""));                     // 캐시 체크
+                
 
                 //캐시에 없을 경우
                 if (cacheList.luisIntent == null || cacheList.luisEntities == null)
@@ -680,11 +677,10 @@ namespace KonaChatBot
                         LuisName = returnLuisName[0];
                     } else
                     {
-                        if ((float)Luis["topScoringIntent"]["score"] < (float)Luis_before[i]["topScoringIntent"]["score"])
+                        if (((float)Luis["topScoringIntent"]["score"] < (float)Luis_before[i]["topScoringIntent"]["score"]) && Luis_before[i]["topScoringIntent"]["intent"].ToString() != "None")
                         {
                             Luis = Luis_before[i];
-                            LuisName = returnLuisName[i];
-
+                            LuisName = returnLuisName[i];  
                         }
                     }
 

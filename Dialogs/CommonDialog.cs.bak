@@ -130,19 +130,15 @@ namespace KonaChatBot.Dialogs
             context.ConversationData.SetValue("commonBeforeQustion", orgMent);
             context.Done("");
         }
-        private static Attachment GetHeroCard(string title, string subtitle, string text, CardImage cardImage, /*CardAction cardAction*/ List<CardAction> buttons, string cardDivision, string cardValue)
+        private static Attachment GetHeroCard(string title, string subtitle, string text, CardImage cardImage, /*CardAction cardAction*/ List<CardAction> buttons)
         {
-            var heroCard = new UserHeroCard
+            var heroCard = new HeroCard
             {
                 Title = title,
                 Subtitle = subtitle,
                 Text = text,
                 Images = new List<CardImage>() { cardImage },
                 Buttons = buttons,
-                Card_division = cardDivision,
-                Card_value = cardValue
-
-
             };
 
             return heroCard.ToAttachment();
@@ -150,8 +146,7 @@ namespace KonaChatBot.Dialogs
         private Attachment getAttachmentFromDialog(DialogList dlg)
         {
             Attachment returnAttachment = new Attachment();
-            string cardDiv = "";
-            string cardVal = "";
+
             if (dlg.dlgType.Equals(TEXTDLG))
             {
                 HeroCard plCard = new HeroCard()
@@ -219,26 +214,12 @@ namespace KonaChatBot.Dialogs
                     cardButtons.Add(plButton);
                 }
 
-                if (!string.IsNullOrEmpty(dlg.cardDivision))
-                {
-                    cardDiv = dlg.cardDivision;
-                }
-
-                if (!string.IsNullOrEmpty(dlg.cardValue))
-                {
-                    //cardVal = priceMediaDlgList[i].cardValue.Replace();
-                    cardVal = dlg.cardValue;
-                }
-
-                HeroCard plCard = new UserHeroCard()
+                HeroCard plCard = new HeroCard()
                 {
                     Title = dlg.cardTitle,
                     Text = dlg.cardTitle,
                     Images = cardImages,
-                    Buttons = cardButtons,
-                    Card_division = cardDiv,
-                    Card_value = cardVal
-                    
+                    Buttons = cardButtons
                 };
                 returnAttachment = plCard.ToAttachment();
             }
@@ -252,9 +233,6 @@ namespace KonaChatBot.Dialogs
         private Attachment getAttachmentFromDialog(CardList card)
         {
             Attachment returnAttachment = new Attachment();
-
-            string cardDiv = "";
-            string cardVal = "";
 
             List<CardImage> cardImages = new List<CardImage>();
             List<CardAction> cardButtons = new List<CardAction>();
@@ -312,25 +290,12 @@ namespace KonaChatBot.Dialogs
                 cardButtons.Add(plButton);
             }
 
-            if (!string.IsNullOrEmpty( card.cardDivision))
-            {
-                cardDiv = card.cardDivision;
-            }
-
-            if (!string.IsNullOrEmpty(card.cardValue))
-            {
-                //cardVal = priceMediaDlgList[i].cardValue.Replace();
-                cardVal = card.cardValue;
-            }
-
-            HeroCard plCard = new UserHeroCard()
+            HeroCard plCard = new HeroCard()
             {
                 Title = card.cardTitle,
                 Text = card.cardTitle,
                 Images = cardImages,
-                Buttons = cardButtons,
-                Card_division = cardDiv,
-                Card_value = cardVal
+                Buttons = cardButtons
             };
             returnAttachment = plCard.ToAttachment();
 

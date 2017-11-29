@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 
-namespace SecCsChatBotDemo.Models
+namespace KonaChatBot.Models
 {
     public class UserHeroCard : Microsoft.Bot.Connector.HeroCard
     {

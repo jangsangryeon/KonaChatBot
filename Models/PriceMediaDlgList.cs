@@ -9,6 +9,7 @@ namespace KonaChatBot.Models
     {
         public int mediaDlgId { get; set; }
         public int priceDlgId { get; set; }
+        public string carTrimNm { get; set; }
         public string trim { get; set; }
         public string engine { get; set; }
         public string cardTitle { get; set; }

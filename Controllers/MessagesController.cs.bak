@@ -2,34 +2,23 @@
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using System.Web;
 using System.Web.Http;
-using System.Web.Http.Description;
 using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Connector;
-using SecCsChatBotDemo.DB;
-using SecCsChatBotDemo.Models;
-using Newtonsoft.Json;
+using KonaChatBot.DB;
+using KonaChatBot.Models;
 using Newtonsoft.Json.Linq;
-using System.Web.Script.Serialization;
-using System.Linq.Expressions;
-using System.Reflection;
-using System.Threading;
-using Microsoft.Bot.Builder.Luis;
-using Microsoft.Bot.Builder.Luis.Models;
-using Moq;
 
-
-//KSO START
 using System.Configuration;
 using System.Web.Configuration;
-//KSO END
+using KonaChatBot.Dialogs;
+using System.IO;
 
-namespace SecCsChatBotDemo
+namespace KonaChatBot
 {
     [BotAuthentication]
     public class MessagesController : ApiController
@@ -38,827 +27,496 @@ namespace SecCsChatBotDemo
         public readonly string TEXTDLG = "2";
         public readonly string CARDDLG = "3";
         public readonly string MEDIADLG = "4";
-        int userDataNum = 0;
-        public TextDlgApiModel textJsonResult;
-        public CarouselDlgApiModel carouselJsonResult;
-        public MediaDlgApiModel mediaJsonResult;
-
-        int sessionNo = 0;
-        string[] strIntent = { };
-        string[] strEntity = { };
-        public static JObject Luis = new JObject();
 		
-		public static Configuration rootWebConfig = WebConfigurationManager.OpenWebConfiguration("/SecCsChatBotDemo");
+		public static Configuration rootWebConfig = WebConfigurationManager.OpenWebConfiguration("/KonaChatBot");
         const string chatBotAppID = "appID";
         public static int appID = Convert.ToInt32(rootWebConfig.ConnectionStrings.ConnectionStrings[chatBotAppID].ToString());
 
-        //public string Json = @"
-        //        {
-        //            ""conversationId"":""5412442"",
-        //            ""dialogCount"":""2"",
-        //            ""status"":""200"",
-        //            ""dialogs"":
-        //            [
-        //                {
-        //                    ""type"":""text"",
-        //                    ""title"":""WELCOME"",
-        //                    ""text"":""안녕하세요,S전자서비스센터챗봇앤이라고해요!""
-        //                },
-        //                {
-        //                    ""type"":""text"",
-        //                    ""text"":""고객님의세탁기모델명을입력해주세요.""
-        //                }
-        //            ]
-        //        }";
+        //config 변수 선언
+        static public string[] LUIS_NM = new string[10];        //루이스 이름
+        static public string[] LUIS_APP_ID = new string[10];    //루이스 app_id
+        static public string LUIS_SUBSCRIPTION = "";            //루이스 구독키
+        static public int LUIS_TIME_LIMIT;                      //루이스 타임 체크
+        static public string QUOTE = "";                        //견적 url
+        static public string TESTDRIVE = "";                    //시승 url
+        static public string BOT_ID = "";                       //bot id
+        static public string MicrosoftAppId = "";               //app id
+        static public string MicrosoftAppPassword = "";         //app password
+        static public string LUIS_SCORE_LIMIT = "";             //루이스 점수 체크
 
-        //public string Json = @"
-        //        {
-        //        ""conversationId"":""5412442"",
-        //        ""dialogCount"":""2"",
-        //        ""status"":""200"",
-        //        ""dialogs"":
-        //        [
-	       //         {
-		      //          ""type"":""carousel"",
-		      //          ""herocards"":
-		      //          [
-			     //           {
-				    //            ""type"":""herocard"",
-				    //            ""title"":""가솔린모던2WD"",
-				    //            ""subtitle"":"""",
-				    //            ""text"":""가격:20,950,000원"",
-				    //            ""media_url"":""https://test.img/test.jpg"",
-        //                        ""card_division"":""img"",
-        //                        ""card_value"":""1"",
-				    //            ""buttons"":
-				    //            [
-					   //             {
-						  //              ""type"":""imBack"",
-						  //              ""title"":""트림자세히보기"",
-						  //              ""values"":""가솔린모던2WD트림""
-					   //             }
-				    //            ]
-			     //           },
-			     //           {
-				    //            ""type"":""herocard"",
-				    //            ""title"":""가솔린모던ART2WD"",
-				    //            ""subtitle"":"""",
-				    //            ""text"":""가격:22,950,000원"",
-				    //            ""media_url"":""https://test.img/test1.jpg"",
-        //                        ""card_division"":""img"",
-        //                        ""card_value"":""1"",
-				    //            ""buttons"":
-				    //            [
-					   //             {
-						  //              ""type"":""imBack"",
-						  //              ""title"":""트림자세히보기"",
-						  //              ""values"":""가솔린모던ART2WD트림""
-					   //             }
-				    //            ]
-			     //           }
-		      //          ]
-	       //         }
-        //        ]
-        //        }";
+        public static JObject Luis = new JObject();             //루이스 json 선언
 
-        public string Json = @"
-                {
-	                ""conversationId"": ""5412442"",
-	                ""dialogCount"": ""1"",
-	                ""status"": ""200"",
-	                ""dialogs"":
-	                [
-		                {
-			                ""type"": ""media"",
-			                ""title"": ""가솔린 모던 2WD"",
-			                ""text"": ""가격: 20,950,000원"",
-			                ""media_url"":""https://test.img/test.jpg"",
-                            ""card_division"":""img"",
-                            ""card_value"":""1"",
-			                ""buttons"":
-			                [
-				                {
-					                ""type"":""imBack"",
-					                ""title"":""외장 색상"",
-					                ""values"":""가솔린 모던 2WD 외장 색상""
-				                },
-				                {
-					                ""type"":""imBack"",
-					                ""title"":""내장 색상"",
-					                ""values"":"" 가솔린 모던 2WD 내장 색상""
-				                },
-				                {
-					                ""type"":""imBack"",
-					                ""title"":""옵션 보기"",
-					                ""values"":"" 가솔린 모던 2WD 옵션 보기""
-				                }
-			                ]
-		                }
-	                ]
-                }";
+		public static int sorryMessageCnt = 0;
+		public static int chatBotID = 0;
 
-        /// <summary>
-        /// POST: api/Messages
-        /// Receive a message from a user and reply to it
-        /// </summary>
+        public static int pagePerCardCnt = 10;
+        public static int pageRotationCnt = 0;
+        public static int fbLeftCardCnt = 0;
+        public static string FB_BEFORE_MENT = "";
+
+        public static List<RelationList> relationList = new List<RelationList>();
+
         public async Task<HttpResponseMessage> Post([FromBody]Activity activity)
         {
-            //HttpResponseMessage response;
-            
-            
 
-            var intentList = new List<string>();
-            var entityList = new List<string>();
+            string cashOrgMent = "";
 
-            if (activity.Type == ActivityTypes.ConversationUpdate && activity.MembersAdded.Any(m => m.Id == activity.Recipient.Id))
+            DbConnect db = new DbConnect();
+
+ 			var response = Request.CreateResponse(HttpStatusCode.OK);
+
+			if (activity.Type == ActivityTypes.ConversationUpdate && activity.MembersAdded.Any(m => m.Id == activity.Recipient.Id))
             {
-                //await testFunc();
-                //ParallelEncryt();
-
-                //api json parsing
-
-                if(JsonParsing(Json) == "text")
-                {
-                    textJsonResult = new TextDlgApiModel();
-                    textJsonResult = TextJsonParsing(Json);
-                }
-                else if (JsonParsing(Json) == "carousel")
-                {
-                    carouselJsonResult = new CarouselDlgApiModel();
-                    carouselJsonResult = CardJsonParsing(Json);
-                }
-                else if (JsonParsing(Json) == "media")
-                {
-                    mediaJsonResult = new MediaDlgApiModel();
-                    mediaJsonResult = MediaJsonParsing(Json);
-                }
-
-
                 DateTime startTime = DateTime.Now;
-                Debug.WriteLine("* DB conn : " + activity.Type);
-                //Db
-                DbConnect db = new DbConnect();
-                List<DialogList> dlg = db.SelectInitDialog();
                 
+                //파라메터 호출
+                Array.Clear(LUIS_NM, 0, 10);
+                Array.Clear(LUIS_APP_ID, 0, 10);
+                List<ConfList> confList = db.SelectConfig();
+
+                for (int i = 0; i < confList.Count; i++)
+                {
+                    switch (confList[i].cnfType)
+                    {
+                        case "LUIS_APP_ID":
+                            LUIS_APP_ID[LUIS_APP_ID.Count(s => s != null)] = confList[i].cnfValue;
+                            LUIS_NM[LUIS_NM.Count(s => s != null)] = confList[i].cnfNm;
+                            break;
+                        case "LUIS_SUBSCRIPTION":
+                            LUIS_SUBSCRIPTION = confList[i].cnfValue;
+                            break;
+                        case "BOT_ID":
+                            BOT_ID = confList[i].cnfValue;
+                            break;
+                        case "MicrosoftAppId":
+                            MicrosoftAppId = confList[i].cnfValue;
+                            break;
+                        case "MicrosoftAppPassword":
+                            MicrosoftAppPassword = confList[i].cnfValue;
+                            break;
+                        case "QUOTE":
+                            QUOTE = confList[i].cnfValue;
+                            break;
+                        case "TESTDRIVE":
+                            TESTDRIVE = confList[i].cnfValue;
+                            break;
+                        case "LUIS_SCORE_LIMIT":
+                            LUIS_SCORE_LIMIT = confList[i].cnfValue;
+                            break;
+                        case "LUIS_TIME_LIMIT":
+                            LUIS_TIME_LIMIT = Convert.ToInt32(confList[i].cnfValue);
+                            break;
+                        default: //미 정의 레코드
+                            Debug.WriteLine("*conf type : " + confList[i].cnfType + "* conf value : " + confList[i].cnfValue);
+                            break;
+                    }
+                }
+
+                Debug.WriteLine("* DB conn : " + activity.Type);
+
+                //초기 다이얼로그 호출
+                List<DialogList> dlg = db.SelectInitDialog(activity.ChannelId);
 
                 ConnectorClient connector = new ConnectorClient(new Uri(activity.ServiceUrl));
-                Debug.WriteLine("* dlg.Count : " + dlg.Count);
-                for (int n = 0; n < dlg.Count; n++)
+
+                foreach (DialogList dialogs in dlg)
                 {
-                    Debug.WriteLine("* dlgId : " + n + "." + dlg[n].dlgId);
-                    Activity reply2 = activity.CreateReply();
-                    reply2.Recipient = activity.From;
-                    reply2.Type = "message";
-                    reply2.Attachments = new List<Attachment>();
-                    reply2.AttachmentLayout = AttachmentLayoutTypes.Carousel;
+                    Activity initReply = activity.CreateReply();
+                    initReply.Recipient = activity.From;
+                    initReply.Type = "message";
+                    initReply.Attachments = new List<Attachment>();
+                    initReply.AttachmentLayout = AttachmentLayoutTypes.Carousel;
 
-                    List<CardList> card = db.SelectDialogCard(dlg[n].dlgId);
-                    List<TextList> text = db.SelectDialogText(dlg[n].dlgId);
-                    List<MediaList> media = db.SelectDialogMedia(dlg[n].dlgId);
+                    Attachment tempAttachment;
 
-                    for (int i = 0; i < text.Count; i++)
+                    if (dialogs.dlgType.Equals(CARDDLG))
                     {
-                        HeroCard plCard = new HeroCard()
+                        foreach (CardList tempcard in dialogs.dialogCard)
                         {
-                            Title = text[i].cardTitle,
-                            Subtitle = text[i].cardText
-                        };
-
-                        Attachment plAttachment = plCard.ToAttachment();
-                        reply2.Attachments.Add(plAttachment);
-                    }
-
-                    for (int i = 0; i < card.Count; i++)
+                            tempAttachment = getAttachmentFromDialog(tempcard);
+                            initReply.Attachments.Add(tempAttachment);
+                        }
+                    } else
                     {
-                        List<CardImage> cardImages = new List<CardImage>();
-                        List<CardAction> cardButtons = new List<CardAction>();
-
-                        if (card[i].imgUrl != null)
-                        {
-                            cardImages.Add(new CardImage(url: card[i].imgUrl));
-                        }
-
-                        if (card[i].btn1Type != null)
-                        {
-                            CardAction plButton = new CardAction()
-                            {
-                                Value = card[i].btn1Context,
-                                Type = card[i].btn1Type,
-                                Title = card[i].btn1Title
-                            };
-
-                            cardButtons.Add(plButton);
-                        }
-
-                        if (card[i].btn2Type != null)
-                        {
-                            CardAction plButton = new CardAction()
-                            {
-                                Value = card[i].btn2Context,
-                                Type = card[i].btn2Type,
-                                Title = card[i].btn2Title
-                            };
-
-                            cardButtons.Add(plButton);
-                        }
-
-                        if (card[i].btn3Type != null)
-                        {
-                            CardAction plButton = new CardAction()
-                            {
-                                Value = card[i].btn3Context,
-                                Type = card[i].btn3Type,
-                                Title = card[i].btn3Title
-                            };
-
-                            cardButtons.Add(plButton);
-                        }
-
-                        HeroCard plCard = new HeroCard()
-                        {
-                            Title = card[i].cardTitle,
-                            Subtitle = card[i].cardSubTitle,
-                            Images = cardImages,
-                            Buttons = cardButtons
-                        };
-
-                        Attachment plAttachment = plCard.ToAttachment();
-                        reply2.Attachments.Add(plAttachment);
+                        tempAttachment = getAttachmentFromDialog(dialogs);
+                        initReply.Attachments.Add(tempAttachment);
                     }
-
-                    for (int i = 0; i < media.Count; i++)
-                    {
-                        List<MediaUrl> mediaURL = new List<MediaUrl>();
-                        List<CardAction> cardButtons = new List<CardAction>();
-
-                        if (media[i].mediaUrl != null)
-                        {
-                            mediaURL.Add(new MediaUrl(url: media[i].mediaUrl));
-                        }
-
-                        if (media[i].btn1Type != null)
-                        {
-                            CardAction plButton = new CardAction()
-                            {
-                                Value = media[i].btn1Context,
-                                Type = media[i].btn1Type,
-                                Title = media[i].btn1Title
-                            };
-
-                            cardButtons.Add(plButton);
-                        }
-
-                        if (media[i].btn2Type != null)
-                        {
-                            CardAction plButton = new CardAction()
-                            {
-                                Value = media[i].btn2Context,
-                                Type = media[i].btn2Type,
-                                Title = media[i].btn2Title
-                            };
-
-                            cardButtons.Add(plButton);
-                        }
-
-                        if (media[i].btn3Type != null)
-                        {
-                            CardAction plButton = new CardAction()
-                            {
-                                Value = media[i].btn3Context,
-                                Type = media[i].btn3Type,
-                                Title = media[i].btn3Title
-                            };
-
-                            cardButtons.Add(plButton);
-                        }
-
-                        VideoCard plCard = new VideoCard()
-                        {
-                            Title = media[i].cardTitle,
-                            Text = media[i].cardText,
-                            Media = mediaURL,
-                            Buttons = cardButtons,
-                            Autostart = false
-                        };
-
-                        Attachment plAttachment = plCard.ToAttachment();
-                        reply2.Attachments.Add(plAttachment);
-                    }
-
-                    var reply1 = await connector.Conversations.SendToConversationAsync(reply2);
+                    await connector.Conversations.SendToConversationAsync(initReply);
                 }
+
                 DateTime endTime = DateTime.Now;
                 Debug.WriteLine("프로그램 수행시간 : {0}/ms", ((endTime - startTime).Milliseconds));
                 Debug.WriteLine("* activity.Type : " + activity.Type);
                 Debug.WriteLine("* activity.Recipient.Id : " + activity.Recipient.Id);
                 Debug.WriteLine("* activity.ServiceUrl : " + activity.ServiceUrl);
-                var welcome = "";
-                var welcomeMsg = "";
-
             }
             else if (activity.Type == ActivityTypes.Message)
             {
-                //await Conversation.SendAsync(activity, () => new Dialogs.RootDialog());
                 Debug.WriteLine("* activity.Type == ActivityTypes.Message ");
-
-                string orgMent = "";
-                string orgENGMent_history = "";
-                JObject Luis = new JObject();
-                DbConnect db = new DbConnect();
-                StateClient stateClient = activity.GetStateClient();
-                BotData userData = await stateClient.BotState.GetUserDataAsync(activity.ChannelId, activity.From.Id);
+                string orgMent = activity.Text;
                 ConnectorClient connector = new ConnectorClient(new Uri(activity.ServiceUrl));
-                
-                orgMent = activity.Text;
-                Debug.WriteLine("* orgMent : "+ orgMent);
 
-                Luis = await GetIntentFromBotLUIS(orgMent);
-                
-                float luisScore = (float)Luis["intents"][0]["score"];
-                int luisEntityCount = (int)Luis["entities"].Count();
-                Debug.WriteLine("* Luis Entity Count : " + luisEntityCount);
-                Debug.WriteLine("* Luis Intents Score : " + luisScore);
+                //대화 시작 시간
+                DateTime startTime = DateTime.Now;
+                long unixTime = ((DateTimeOffset)startTime).ToUnixTimeSeconds();
 
-                //
- 
+                //await Conversation.SendAsync(activity, () => new TestDriveApi(orgMent));
+                //await Conversation.SendAsync(activity, () => new RecommendApiDialog());
+                //response = Request.CreateResponse(HttpStatusCode.OK);
+                //return response;
 
-                if (luisScore > 0 && luisEntityCount > 0)
+                //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                ////페이스북 위치 값 저장
+                //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+                //var facebooklocation = activity.Entities?.Where(t => t.Type == "Place").Select(t => t.GetAs<Place>()).FirstOrDefault();
+                //if (facebooklocation != null)
+                //{
+                //    try
+                //    {
+                //        var geo = (facebooklocation.Geo as JObject)?.ToObject<GeoCoordinates>();
+                //        if (geo != null)
+                //        {
+                //            HistoryLog("[activity.Text]2 ==>> activity.Text :: location [" + activity.Text + "]");
+                //            HistoryLog("[logic start] ==>> userID :: location [" + geo.Longitude + " " + geo.Latitude + "]");
+                //            orgMent = "current location:" + geo.Longitude + ":" + geo.Latitude;
+                //        }
+                //    }
+                //    catch (Exception ex)
+                //    {
+                //        Debug.WriteLine("ex : " + ex.ToString());
+                //        HistoryLog("[logic start] ==>> userID :: location error [" + activity.Conversation.Id + "]");
+                //    }
+                //}
+
+                //금칙어 체크
+                CardList bannedMsg = db.BannedChk(orgMent);
+                Debug.WriteLine("* bannedMsg : " + bannedMsg.cardText);//해당금칙어에 대한 답변
+
+                if (bannedMsg.cardText != null)
                 {
-                    string intent = (string)Luis["intents"][0]["intent"];
-                    string entity = (string)Luis["entities"][0]["entity"];
-                    Debug.WriteLine("* 1.intent : " + intent + " || entity : "+ entity);
-                    intent = intent.Replace("\"", "");
-                    entity = entity.Replace("\"", "");
-                    entity = entity.Replace(" ", "");
-                    //Debug.WriteLine("* sessionNo : " + sessionNo ); 
-                    //Debug.WriteLine("LUIS_INTENT : " + (string)(context.Session["LUIS_INTENT"]));
-                    //Debug.WriteLine("LUIS_ENTITY : " + (string)(context.Session["LUIS_ENTITY"]));
+                    Activity reply_ment = activity.CreateReply();
+                    reply_ment.Recipient = activity.From;
+                    reply_ment.Type = "message";
+                    reply_ment.Text = bannedMsg.cardText;
 
-                    //
-                    sessionNo = sessionNo + 1;
- 
-                    //
-                    intentList.Add(intent);
-                    entityList.Add(entity);
+                    var reply_ment_info = await connector.Conversations.SendToConversationAsync(reply_ment);
+                    return response;
+                }
 
-                    // 
-                    if (intent == "customerInfo")
+                //인텐트 엔티티 검출
+                //캐시 체크
+                cashOrgMent = Regex.Replace(orgMent, @"[^a-zA-Z0-9ㄱ-힣-\s]", "", RegexOptions.Singleline);
+                CacheList cacheList = db.CacheChk(orgMent.Replace(" ",""));                     // 캐시 체크
+                Debug.WriteLine("* luisId : " + cacheList.luisId);              // luisId
+                Debug.WriteLine("* Intent : " + cacheList.luisIntent);            // intentId
+                Debug.WriteLine("* Entity : " + cacheList.luisEntities);         // entitiesId
+                Debug.WriteLine("* Score : " + cacheList.luisScore);         // entitiesId
+
+                //캐시에 없을 경우
+                if (cacheList.luisIntent == null || cacheList.luisEntities == null)
+                {
+                    //루이스 호출전 TBL_WORD_CHG_DICT 테이블에서 전처리
+                    //for (int n = 0; n < Regex.Split(orgMent, " ").Length; n++)
+                    //{
+                    //    string chgMsg = db.SelectChgMsg(Regex.Split(orgMent, " ")[n]);
+                    //    if (!string.IsNullOrEmpty(chgMsg))
+                    //    {
+                    //        orgMent = orgMent.Replace(Regex.Split(orgMent, " ")[n], chgMsg);
+                    //    }
+                    //}
+
+                    //루이스 체크
+                    cacheList.luisId = GetMultiLUIS(orgMent);
+
+                    float luisScore = (float)Luis["intents"][0]["score"];
+                    int luisEntityCount = (int)Luis["entities"].Count();
+
+                    string luisEntities = "";
+                    string luisType = "";
+                    if (luisScore > Convert.ToDouble(LUIS_SCORE_LIMIT) && luisEntityCount > 0)
                     {
-                        var luisCustomerInfo = userData.GetProperty<string>("luisCustomerInfo");
-                        if (entity == "김설현")
+                        for (int i = 0; i < luisEntityCount; i++)
                         {
-                            luisCustomerInfo = "";
+                            //luisEntities = luisEntities + Luis["entities"][i]["entity"] + ",";
+                            luisType = (string)Luis["entities"][i]["type"];
+                            luisType = Regex.Split(luisType, "::")[1];
+                            luisEntities = luisEntities + luisType + ",";
                         }
-                        //var luisCustomerInfo = userData.GetProperty<string>("luisCustomerInfo");
-                        luisCustomerInfo = luisCustomerInfo + "\n" + orgMent;
-                        userData.SetProperty<string>("luisCustomerInfo", luisCustomerInfo);
-                        Debug.WriteLine("1-1.intent : customerInfo || input : " + orgMent + " || entity : " + entity + " || luisCustomerInfo : " + luisCustomerInfo);
-
+                        Debug.WriteLine("luisEntities - 1 : " + luisEntities);
                     }
 
-
-                    //userData.SetProperty<List>(IList, intentList);
-                    userData.SetProperty<string>("luisIntent", intent);
-                    userData.SetProperty<string>("luisEntity", entity);
-
-                    userData.SetProperty<string>(intent, orgENGMent_history);
-                    Debug.WriteLine("* 2. orgENGMent_history : " + orgENGMent_history);
-                    await stateClient.BotState.SetUserDataAsync(activity.ChannelId, activity.From.Id, userData);
-                    Debug.WriteLine("* activity.ChannelId : " + activity.ChannelId + " || activity.From.Id : " + activity.From.Id);
-
-                    List<LuisList> LuisDialogID = db.SelectLuis(intent, entity);
-
-                    if (LuisDialogID.Count == 0)
+                    if(luisEntities.Length > 0)
                     {
-                        Debug.WriteLine("* NO LuisDialogID");
-                        Activity reply_err = activity.CreateReply();
-                        reply_err.Recipient = activity.From;
-                        reply_err.Type = "message";
-                        reply_err.Text = "I'm sorry. I do not know what you mean.";
-                        var reply1 = await connector.Conversations.SendToConversationAsync(reply_err);
+                        luisEntities = luisEntities.Substring(0, luisEntities.LastIndexOf(","));
+                        luisEntities = Regex.Replace(luisEntities, " ", "");
+
+                        //string[] luisEntities_array = new string[10];
+                        //luisEntities_array = Regex.Split(luisEntities, ",");
+                        //Array.Resize(ref luisEntities_array, luisEntities_array.Count(s => s != null));
+                        ////Array.Sort(luisEntities_array);
+                        ////Array.Reverse(luisEntities_array);
+                        //luisEntities_array = luisEntities_array.OrderByDescending(c => c).ToArray();
+                        //foreach (var str in luisEntities_array)
+                        //{
+                        //    Debug.WriteLine(str.ToString());
+                        //}
+                        //Debug.WriteLine("luisEntities_array = " + luisEntities_array);
+
+                        luisEntities = db.SelectArray(luisEntities);
+
+                        Debug.WriteLine("luisEntities - 2 : " + luisEntities);
+
+                        cacheList.luisIntent = (string)Luis["intents"][0]["intent"];
+                        cacheList.luisEntities = luisEntities;
                     }
-                    else
+                    
+                }
+
+                //TBL_DLG_RELATION_LUIS 테이블에서 해당 다이얼로그 리스트 호출
+                relationList = db.DefineTypeChk(cacheList.luisId, cacheList.luisIntent, cacheList.luisEntities);
+                
+                //COMMON DIALG와 API 호출 분기
+                //relation 값이 있을 경우
+
+                if (relationList.Count > 0)
+                {
+                    //답변이 시승 rest api 호출인 경우
+                    if (relationList[0].dlgApiDefine.Equals("api testdrive"))
                     {
-                        Debug.WriteLine("* YES LuisDialogID || LuisDialogID.Count : " + LuisDialogID.Count);
-
-                        for (int i = 0; i < LuisDialogID.Count; i++)
+                        //await Conversation.SendAsync(activity, () => new TestDriveApi(cacheList.luisIntent, cacheList.luisEntities, orgMent));
+                        await Conversation.SendAsync(activity, () => new TestDriveApi(orgMent));
+                    }
+                    //답변이 가격 rest api 호출인 경우
+                    else if (relationList[0].dlgApiDefine.Equals("api quot"))
+                    {
+                        await Conversation.SendAsync(activity, () => new PriceApi(cacheList.luisIntent, cacheList.luisEntities, orgMent));
+                    }
+                    //답변이 추천 rest api 호출인 경우
+                    else if (relationList[0].dlgApiDefine.Equals("api recommend"))
+                    {
+                        if (activity.ChannelId != "facebook")
                         {
-                            Activity reply2 = activity.CreateReply();
-                            reply2.Recipient = activity.From;
-                            reply2.Type = "message";
-                            reply2.Attachments = new List<Attachment>();
-                            reply2.AttachmentLayout = AttachmentLayoutTypes.Carousel;
-
-                            int dlgID = LuisDialogID[i].dlgId;
-
-                            
-
-                            List<DialogList> dlg = db.SelectDialog(dlgID);
-
-                            for (int n = 0; n < dlg.Count; n++)
-                            {
-                                string dlgType = dlg[n].dlgType;
-
-                                if (dlgType == TEXTDLG)
-                                {
-                                    List<TextList> text = db.SelectDialogText(dlg[n].dlgId);
-
-                                    for (int j = 0; j < text.Count; j++)
-                                    {
-                                        HeroCard plCard = new HeroCard()
-                                        {
-                                            Title = text[j].cardTitle,
-                                            Subtitle = text[j].cardText
-                                        };
-
-                                        Attachment plAttachment = plCard.ToAttachment();
-                                        reply2.Attachments.Add(plAttachment);
-                                    }
-                                }
-                                else if (dlgType == CARDDLG)
-                                {
-                                    List<CardList> card = db.SelectDialogCard(dlg[n].dlgId);
-
-                                    for (int j = 0; j < card.Count; j++)
-                                    {
-                                        List<CardImage> cardImages = new List<CardImage>();
-                                        List<CardAction> cardButtons = new List<CardAction>();
-
-                                        if (card[j].imgUrl != null)
-                                        {
-                                            cardImages.Add(new CardImage(url: card[j].imgUrl));
-                                        }
-
-                                        if (card[j].btn1Type != null)
-                                        {
-                                            CardAction plButton = new CardAction()
-                                            {
-                                                Value = card[j].btn1Context,
-                                                Type = card[j].btn1Type,
-                                                Title = card[j].btn1Title
-                                            };
-
-                                            cardButtons.Add(plButton);
-                                        }
-
-                                        if (card[j].btn2Type != null)
-                                        {
-                                            CardAction plButton = new CardAction()
-                                            {
-                                                Value = card[j].btn2Context,
-                                                Type = card[j].btn2Type,
-                                                Title = card[j].btn2Title
-                                            };
-
-                                            cardButtons.Add(plButton);
-                                        }
-
-                                        if (card[j].btn3Type != null)
-                                        {
-                                            CardAction plButton = new CardAction()
-                                            {
-                                                Value = card[j].btn3Context,
-                                                Type = card[j].btn3Type,
-                                                Title = card[j].btn3Title
-                                            };
-
-                                            cardButtons.Add(plButton);
-                                        }
-
-                                        var strCardSubTitle = card[j].cardSubTitle;
-                                        if (card[j].dlgId == 2009)
-                                        {
-                                            //var customerInfo = userData.GetProperty<string>("luisCustomerInfo");
-                                            strCardSubTitle = userData.GetProperty<string>("luisCustomerInfo");
-                                        }
-                                        
-                                        HeroCard plCard = new HeroCard()
-                                        {
-                                            Title = card[j].cardTitle,
-                                            //Subtitle = card[j].cardSubTitle,
-                                            Subtitle = strCardSubTitle,
-                                            Images = cardImages,
-                                            Buttons = cardButtons
-                                        };
-
-                                        Attachment plAttachment = plCard.ToAttachment();
-                                        reply2.Attachments.Add(plAttachment);
-                                    }
-                                }
-                                else if (dlgType == MEDIADLG)
-                                {
-                                    List<MediaList> media = db.SelectDialogMedia(dlg[n].dlgId);
-
-                                    for (int j = 0; j < media.Count; j++)
-                                    {
-                                        List<MediaUrl> mediaURL = new List<MediaUrl>();
-                                        List<CardAction> cardButtons = new List<CardAction>();
-
-                                        if (media[j].mediaUrl != null)
-                                        {
-                                            mediaURL.Add(new MediaUrl(url: media[j].mediaUrl));
-                                        }
-
-                                        if (media[j].btn1Type != null)
-                                        {
-                                            CardAction plButton = new CardAction()
-                                            {
-                                                Value = media[j].btn1Context,
-                                                Type = media[j].btn1Type,
-                                                Title = media[j].btn1Title
-                                            };
-
-                                            cardButtons.Add(plButton);
-                                        }
-
-                                        if (media[j].btn2Type != null)
-                                        {
-                                            CardAction plButton = new CardAction()
-                                            {
-                                                Value = media[j].btn2Context,
-                                                Type = media[j].btn2Type,
-                                                Title = media[j].btn2Title
-                                            };
-
-                                            cardButtons.Add(plButton);
-                                        }
-
-                                        if (media[j].btn3Type != null)
-                                        {
-                                            CardAction plButton = new CardAction()
-                                            {
-                                                Value = media[j].btn3Context,
-                                                Type = media[j].btn3Type,
-                                                Title = media[j].btn3Title
-                                            };
-
-                                            cardButtons.Add(plButton);
-                                        }
-
-                                        VideoCard plCard = new VideoCard()
-                                        {
-                                            Title = media[j].cardTitle,
-                                            Text = media[j].cardText,
-                                            Media = mediaURL,
-                                            Buttons = cardButtons,
-                                            Autostart = false
-                                        };
-
-                                        Attachment plAttachment = plCard.ToAttachment();
-                                        reply2.Attachments.Add(plAttachment);
-                                    }
-                                }
-                            }
-
-                            var reply1 = await connector.Conversations.SendToConversationAsync(reply2);
-
+                            //await Conversation.SendAsync(activity, () => new TestDriveApi(cacheList.luisIntent, cacheList.luisEntities, orgMent));
+                            await Conversation.SendAsync(activity, () => new RecommendApiDialog());
+                        } else
+                        {
+                            //facebook일 경우 처리
                         }
+                    }
+                    //답변이 일반 답변인 경우
+                    else if (relationList[0].dlgApiDefine.Equals("D"))
+                    {
+                        await Conversation.SendAsync(activity, () => new CommonDialog( activity.ChannelId, orgMent));                        
+                        
+                        DateTime endTime = DateTime.Now;
+                        Debug.WriteLine("프로그램 수행시간 : {0}/ms", ((endTime - startTime).Milliseconds));
+                        Debug.WriteLine("* activity.Type : " + activity.Type);
+                        Debug.WriteLine("* activity.Recipient.Id : " + activity.Recipient.Id);
+                        Debug.WriteLine("* activity.ServiceUrl : " + activity.ServiceUrl);
 
+                        int dbResult = db.insertUserQuery(cashOrgMent, cacheList.luisIntent, cacheList.luisEntities, "0", cacheList.luisId, 'H',0);
+                        Debug.WriteLine("INSERT QUERY RESULT : " + dbResult.ToString());
+
+                        if (db.insertHistory(activity.Conversation.Id, activity.Text, relationList[0].dlgId.ToString(), activity.ChannelId, ((endTime - startTime).Milliseconds), 0) > 0)
+                        {
+                            Debug.WriteLine("HISTORY RESULT SUCCESS");
+                            HistoryLog("HISTORY RESULT SUCCESS");
+                        }
+                        else
+                        {
+                            Debug.WriteLine("HISTORY RESULT SUCCESS");
+                            HistoryLog("HISTORY RESULT FAIL");
+                        }
+                        //relationList.Clear();
                     }
                 }
+                //relation 값이 없을 경우 -> 네이버 기사 검색
                 else
                 {
-                    Debug.WriteLine("* NO Luis Score.. ");
-                    Debug.WriteLine(userData.ToString());
-
-                    //
-                    var intentArray = intentList.ToArray();
- 
-                    foreach (string intent in intentList)
-                    {
-                        Debug.WriteLine("* intent[] :" + intent);
-                        //System.Console.WriteLine(prime);
-                    }
-                    Debug.WriteLine("intentList" + intentList);
-                    
-                    Activity reply_err = activity.CreateReply();
- 
-                    //
-                    var luisIntent = userData.GetProperty<string>("luisIntent");
-                    var luisEntity = userData.GetProperty<string>("luisEntity");
-                    Debug.WriteLine("** orgMent : " + orgMent + "| luisIntent : " + luisIntent + " | luisEntity : " + luisEntity);
-
-                    List<LuisList> LuisDialogID = db.SelectLuisSecond(activity.Text, luisIntent, luisEntity);
-
-                    if (LuisDialogID.Count == 0)
-                    {
-                        Debug.WriteLine("** NO LuisDialogID");
-                        //Activity reply_err = activity.CreateReply();
-                        reply_err.Recipient = activity.From;
-                        reply_err.Type = "message";
-                        reply_err.Text = "I'm sorry. I do not know what you mean.";
-                        var reply1 = await connector.Conversations.SendToConversationAsync(reply_err);
-                        
-                    }
-                    else
-                    {
-                        Debug.WriteLine("** SelectLuisSecond() YES | LuisDialogID | LuisDialogID.Count : " + LuisDialogID.Count);
-
-                        for (int i = 0; i < LuisDialogID.Count; i++)
-                        {
-                            Activity reply2 = activity.CreateReply();
-                            reply2.Recipient = activity.From;
-                            reply2.Type = "message";
-                            reply2.Attachments = new List<Attachment>();
-                            reply2.AttachmentLayout = AttachmentLayoutTypes.Carousel;
-
-                            int dlgID = LuisDialogID[i].dlgId;
-
-                            string dlgIntent = LuisDialogID[i].dlgIntent;
-                            string dlgEntities = LuisDialogID[i].dlgEntities;
-                            
-                            userData.SetProperty<string>("luisIntent", dlgIntent);
-                            userData.SetProperty<string>("luisEntity", dlgEntities);
-                            Debug.WriteLine("** userData.SetProperty > ("+ dlgID+") luisIntent: " + dlgIntent + "| luisEntity:" + dlgEntities);
-
-                            await stateClient.BotState.SetUserDataAsync(activity.ChannelId, activity.From.Id, userData);
-
-                            List <DialogList> dlg = db.SelectDialog(dlgID);
-
-                            for (int n = 0; n < dlg.Count; n++)
-                            {
-                                string dlgType = dlg[n].dlgType;
-
-                                if (dlgType == TEXTDLG)
-                                {
-                                    List<TextList> text = db.SelectDialogText(dlg[n].dlgId);
-
-                                    for (int j = 0; j < text.Count; j++)
-                                    {
-                                        HeroCard plCard = new HeroCard()
-                                        {
-                                            Title = text[j].cardTitle,
-                                            Subtitle = text[j].cardText
-                                        };
-
-                                        Attachment plAttachment = plCard.ToAttachment();
-                                        reply2.Attachments.Add(plAttachment);
-                                    }
-                                }
-                                else if (dlgType == CARDDLG)
-                                {
-                                    List<CardList> card = db.SelectDialogCard(dlg[n].dlgId);
-
-                                    for (int j = 0; j < card.Count; j++)
-                                    {
-                                        List<CardImage> cardImages = new List<CardImage>();
-                                        List<CardAction> cardButtons = new List<CardAction>();
-
-                                        if (card[j].imgUrl != null)
-                                        {
-                                            cardImages.Add(new CardImage(url: card[j].imgUrl));
-                                        }
-
-                                        if (card[j].btn1Type != null)
-                                        {
-                                            CardAction plButton = new CardAction()
-                                            {
-                                                Value = card[j].btn1Context,
-                                                Type = card[j].btn1Type,
-                                                Title = card[j].btn1Title
-                                            };
-
-                                            cardButtons.Add(plButton);
-                                        }
-
-                                        if (card[j].btn2Type != null)
-                                        {
-                                            CardAction plButton = new CardAction()
-                                            {
-                                                Value = card[j].btn2Context,
-                                                Type = card[j].btn2Type,
-                                                Title = card[j].btn2Title
-                                            };
-
-                                            cardButtons.Add(plButton);
-                                        }
-
-                                        if (card[j].btn3Type != null)
-                                        {
-                                            CardAction plButton = new CardAction()
-                                            {
-                                                Value = card[j].btn3Context,
-                                                Type = card[j].btn3Type,
-                                                Title = card[j].btn3Title
-                                            };
-
-                                            cardButtons.Add(plButton);
-                                        }
-
-                                        HeroCard plCard = new HeroCard()
-                                        {
-                                            Title = card[j].cardTitle,
-                                            Subtitle = card[j].cardSubTitle,
-                                            Images = cardImages,
-                                            Buttons = cardButtons
-                                        };
-
-                                        Attachment plAttachment = plCard.ToAttachment();
-                                        reply2.Attachments.Add(plAttachment);
-                                    }
-                                }
-                                else if (dlgType == MEDIADLG)
-                                {
-                                    List<MediaList> media = db.SelectDialogMedia(dlg[n].dlgId);
-
-                                    for (int j = 0; j < media.Count; j++)
-                                    {
-                                        List<MediaUrl> mediaURL = new List<MediaUrl>();
-                                        List<CardAction> cardButtons = new List<CardAction>();
-
-                                        if (media[j].mediaUrl != null)
-                                        {
-                                            mediaURL.Add(new MediaUrl(url: media[j].mediaUrl));
-                                        }
-
-                                        if (media[j].btn1Type != null)
-                                        {
-                                            CardAction plButton = new CardAction()
-                                            {
-                                                Value = media[j].btn1Context,
-                                                Type = media[j].btn1Type,
-                                                Title = media[j].btn1Title
-                                            };
-
-                                            cardButtons.Add(plButton);
-                                        }
-
-                                        if (media[j].btn2Type != null)
-                                        {
-                                            CardAction plButton = new CardAction()
-                                            {
-                                                Value = media[j].btn2Context,
-                                                Type = media[j].btn2Type,
-                                                Title = media[j].btn2Title
-                                            };
-
-                                            cardButtons.Add(plButton);
-                                        }
-
-                                        if (media[j].btn3Type != null)
-                                        {
-                                            CardAction plButton = new CardAction()
-                                            {
-                                                Value = media[j].btn3Context,
-                                                Type = media[j].btn3Type,
-                                                Title = media[j].btn3Title
-                                            };
-
-                                            cardButtons.Add(plButton);
-                                        }
-
-                                        VideoCard plCard = new VideoCard()
-                                        {
-                                            Title = media[j].cardTitle,
-                                            Text = media[j].cardText,
-                                            Media = mediaURL,
-                                            Buttons = cardButtons,
-                                            Autostart = false
-                                        };
-
-                                        Attachment plAttachment = plCard.ToAttachment();
-                                        reply2.Attachments.Add(plAttachment);
-                                    }
-                                }
-                            }
-
-                            var reply1 = await connector.Conversations.SendToConversationAsync(reply2);
-                            
-                        }
-
-
-                    }
+                    //네이버 검색
+                    await Conversation.SendAsync(activity, () => new IntentNoneDialog("", "", startTime, "", ""));
                 }
             }
             else
             {
                 HandleSystemMessage(activity);
             }
-            var response = Request.CreateResponse(HttpStatusCode.OK);
             return response;
+        }
+
+        private Attachment getAttachmentFromDialog(DialogList dlg)
+        {
+            Attachment returnAttachment = new Attachment();
+
+            if (dlg.dlgType.Equals(TEXTDLG))
+            {
+                HeroCard plCard = new HeroCard()
+                {
+                    Title = dlg.cardTitle,
+                    Text = dlg.cardText
+                };
+                returnAttachment = plCard.ToAttachment();
+            }
+            else if (dlg.dlgType.Equals(MEDIADLG))
+            {
+                List<CardImage> cardImages = new List<CardImage>();
+                List<CardAction> cardButtons = new List<CardAction>();
+
+                if (dlg.mediaUrl != null)
+                {
+                    cardImages.Add(new CardImage(url: dlg.mediaUrl));
+                }
+
+                if (dlg.btn1Type != null)
+                {
+                    CardAction plButton = new CardAction()
+                    {
+                        Value = dlg.btn1Context,
+                        Type = dlg.btn1Type,
+                        Title = dlg.btn1Title
+                    };
+
+                    cardButtons.Add(plButton);
+                }
+
+                if (dlg.btn2Type != null)
+                {
+                    CardAction plButton = new CardAction()
+                    {
+                        Value = dlg.btn2Context,
+                        Type = dlg.btn2Type,
+                        Title = dlg.btn2Title
+                    };
+
+                    cardButtons.Add(plButton);
+                }
+
+                if (dlg.btn3Type != null)
+                {
+                    CardAction plButton = new CardAction()
+                    {
+                        Value = dlg.btn3Context,
+                        Type = dlg.btn3Type,
+                        Title = dlg.btn3Title
+                    };
+
+                    cardButtons.Add(plButton);
+                }
+
+                if (dlg.btn4Type != null)
+                {
+                    CardAction plButton = new CardAction()
+                    {
+                        Value = dlg.btn4Context,
+                        Type = dlg.btn4Type,
+                        Title = dlg.btn4Title
+                    };
+
+                    cardButtons.Add(plButton);
+                }
+
+                HeroCard plCard = new HeroCard()
+                {
+                    Title = dlg.cardTitle,
+                    Text = dlg.cardTitle,
+                    Images = cardImages,
+                    Buttons = cardButtons
+                };
+                returnAttachment = plCard.ToAttachment();
+            }
+            else
+            {
+                Debug.WriteLine("Dialog Type Error : " + dlg.dlgType);
+            }
+            return returnAttachment;
+        }
+
+        private Attachment getAttachmentFromDialog(CardList card)
+        {
+            Attachment returnAttachment = new Attachment();
+
+            List<CardImage> cardImages = new List<CardImage>();
+            List<CardAction> cardButtons = new List<CardAction>();
+
+            if (card.imgUrl != null)
+            {
+                cardImages.Add(new CardImage(url: card.imgUrl));
+            }
+
+            if (card.btn1Type != null)
+            {
+                CardAction plButton = new CardAction()
+                {
+                    Value = card.btn1Context,
+                    Type = card.btn1Type,
+                    Title = card.btn1Title
+                };
+
+                cardButtons.Add(plButton);
+            }
+
+            if (card.btn2Type != null)
+            {
+                CardAction plButton = new CardAction()
+                {
+                    Value = card.btn2Context,
+                    Type = card.btn2Type,
+                    Title = card.btn2Title
+                };
+
+                cardButtons.Add(plButton);
+            }
+
+            if (card.btn3Type != null)
+            {
+                CardAction plButton = new CardAction()
+                {
+                    Value = card.btn3Context,
+                    Type = card.btn3Type,
+                    Title = card.btn3Title
+                };
+
+                cardButtons.Add(plButton);
+            }
+
+            if (card.btn4Type != null)
+            {
+                CardAction plButton = new CardAction()
+                {
+                    Value = card.btn4Context,
+                    Type = card.btn4Type,
+                    Title = card.btn4Title
+                };
+
+                cardButtons.Add(plButton);
+            }
+
+            HeroCard plCard = new HeroCard()
+            {
+                Title = card.cardTitle,
+                Text = card.cardTitle,
+                Images = cardImages,
+                Buttons = cardButtons
+            };
+            returnAttachment = plCard.ToAttachment();
+
+            return returnAttachment;
         }
 
         private Activity HandleSystemMessage(Activity message)
         {
             if (message.Type == ActivityTypes.DeleteUserData)
             {
-                // Implement user deletion here
-                // If we handle user deletion, return a real message
             }
             else if (message.Type == ActivityTypes.ConversationUpdate)
             {
-                // Handle conversation state changes, like members being added and removed
-                // Use Activity.MembersAdded and Activity.MembersRemoved and Activity.Action for info
-                // Not available in all channels
             }
             else if (message.Type == ActivityTypes.ContactRelationUpdate)
             {
-                // Handle add/remove from contact lists
-                // Activity.From + Activity.Action represent what happened
             }
             else if (message.Type == ActivityTypes.Typing)
             {
-                // Handle knowing tha the user is typing
             }
             else if (message.Type == ActivityTypes.Ping)
             {
@@ -867,269 +525,180 @@ namespace SecCsChatBotDemo
             return null;
         }
 
-        private static async Task<JObject> GetIntentFromBotLUIS(string Query)
+        private static async Task<JObject> GetIntentFromBotLUIS(string luis_app_id, string luis_subscription, string query)
         {
-            Query = Uri.EscapeDataString(Query);
+
             JObject jsonObj = new JObject();
-            string[] RequestURI = new string[1];
-            //RequestURI[0] = "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/ac08a04f-3a5a-4bae-9eaa-47fe069d01b5?subscription-key=7489b95cf3fb4797939ea70ce94a4b11" + "&timezoneOffset=0&verbose=true&q=" + Query;
-            //RequestURI[1] = "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/b1437ec6-3301-4c24-8bcb-1af58ee2c47c?subscription-key=7efb093087dd48918b903885b944740c" + "&timezoneOffset=0&verbose=true&q=" + Query;
-            //RequestURI[0] = "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/83f7cb60-6027-4fbb-b3da-d6d4d4b5a40f?subscription-key=03067a6e4dca40ee9766a8fa9da6d864" + "&timezoneOffset=0&verbose=true&q=" + Query;
-            RequestURI[0] = "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/5ba3e658-7b1a-45bc-92a8-faa29f553f2a?subscription-key=03067a6e4dca40ee9766a8fa9da6d864" + "&timezoneOffset=0&verbose=true&q=" + Query;
+
+            query = Uri.EscapeDataString(query);
+
+            string url = string.Format("https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/{0}?subscription-key={1}&timezoneOffset=0&verbose=true&q={2}", luis_app_id, luis_subscription, query);
+            Debug.WriteLine("url = " + url);
             using (HttpClient client = new HttpClient())
             {
-                for (int i = 0; i < RequestURI.Length; i++)
+
+                HttpResponseMessage msg = await client.GetAsync(url);
+
+                if (msg.IsSuccessStatusCode)
                 {
-                    HttpResponseMessage msg = await client.GetAsync(RequestURI[i]);
-
-                    if (msg.IsSuccessStatusCode)
-                    {
-                        var JsonDataResponse = await msg.Content.ReadAsStringAsync();
-                        jsonObj = JObject.Parse(JsonDataResponse);
-                    }
-                    msg.Dispose();
-
-                    if (jsonObj["entities"].Count() != 0 && (float)jsonObj["intents"][0]["score"] > 0.3)
-                    {
-                        break;
-                    }
+                    var JsonDataResponse = await msg.Content.ReadAsStringAsync();
+                    jsonObj = JObject.Parse(JsonDataResponse);
                 }
+                msg.Dispose();
+
+                if (jsonObj["entities"].Count() != 0 && (float)jsonObj["intents"][0]["score"] > 0.3)
+                {
+                    //break;
+                }
+
             }
             return jsonObj;
         }
 
-        Func<Task> testFunc = async () =>
+        public static void HistoryLog(String strMsg)
         {
-            Debug.WriteLine("In");
-            Luis = await GetIntentFromBotLUIS("출장서비스예약");
-            await Task.Delay(100);
-            Luis = await GetIntentFromBotLUIS("세 탁 기 작 동 시 소 음 이 심 하 게 납 니 다 .");
-            //await Task.Delay(100);
-            //Luis = await GetIntentFromBotLUIS("출장서비스예약");
-        };
+            try
+            {
+                string m_strLogPrefix = AppDomain.CurrentDomain.BaseDirectory + @"LOG\";
+                string m_strLogExt = @".LOG";
+                DateTime dtNow = DateTime.Now;
+                string strDate = dtNow.ToString("yyyy-MM-dd");
+                string strPath = String.Format("{0}{1}{2}", m_strLogPrefix, strDate, m_strLogExt);
+                string strDir = Path.GetDirectoryName(strPath);
+                DirectoryInfo diDir = new DirectoryInfo(strDir);
 
+                if (!diDir.Exists)
+                {
+                    diDir.Create();
+                    diDir = new DirectoryInfo(strDir);
+                }
 
+                if (diDir.Exists)
+                {
+                    System.IO.StreamWriter swStream = File.AppendText(strPath);
+                    string strLog = String.Format("{0}: {1}", dtNow.ToString("MM/dd/yyyy hh:mm:ss.fff"), strMsg);
+                    swStream.WriteLine(strLog);
+                    swStream.Close(); ;
+                }
+            }
+            catch (System.Exception e)
+            {
+                HistoryLog(e.Message);
+                Debug.WriteLine(e.Message);
+            }
+        }
 
-        const int MAX = 3;
-        const int SHIFT = 3;
-
-
-        static void ParallelEncryt()
+        private String GetMultiLUIS(string query)
         {
-            //string text = "출장서비스예약";
-            List<string> textList = new List<string>(MAX);
-            //for (int i = 0; i < MAX; i++)
-            //{
-            //    textList.Add(text);
-            //}
-            textList.Add("출장서비스예약");
-            textList.Add("네 요 청 합 니 다");
-            textList.Add("우 리 집 세 탁 기 가 고 장 난 것 같 아 요");
-
             
+
+
+            Debug.WriteLine("LUIS NM : "+ LUIS_NM.Count());
+            //for (int i = 0; i < LUIS_NM.Count(); i++)
+            //{
+            //    Debug.WriteLine("LUIS_NM [ " + i + " ] ====>>>> " + LUIS_NM[i].ToString());
+            //}
+
+            int MAX = LUIS_APP_ID.Count(s => s != null);
+            Array.Resize(ref LUIS_APP_ID, MAX);
+
+            String[] returnLuisName = new string[MAX];
+            JObject[] Luis_before = new JObject[MAX];
+            string LuisName = "";
+            List<string[]> textList = new List<string[]>(MAX);
+
+
+            for (int i = 0; i < MAX; i++)
+            {
+                //textList.Add(LUIS_APP_ID[i] +"|"+ LUIS_SUBSCRIPTION + "|" + query);
+                textList.Add(new string[] { LUIS_NM[i], LUIS_APP_ID[i], LUIS_SUBSCRIPTION, query });
+
+            }
+
+            //병렬처리 시간 체크
             System.Diagnostics.Stopwatch watch = new System.Diagnostics.Stopwatch();
             watch.Start();
-            Parallel.For(0, MAX, async async =>
+            Parallel.For(0, MAX, new ParallelOptions { MaxDegreeOfParallelism = MAX }, async async =>
             {
-                string chArr = textList[async].ToString();
 
-                Luis = await GetIntentFromBotLUIS(chArr);
+                //var task_luis = Task<JObject>.Run(async () => await GetIntentFromBotLUIS(textList[async][1], textList[async][2], textList[async][3]));
+                var task_luis = Task<JObject>.Run(() => GetIntentFromBotLUIS(textList[async][1], textList[async][2], textList[async][3]));
 
-                Debug.WriteLine("["+async + "] top scoring : " + Luis["intents"][0]["intent"]);
+                try
+                {
+                    //task_luis.GetAwaiter();
+                    //task_luis.Wait();
+                    Task.WaitAll(task_luis);
+                    Debug.WriteLine(async + " -- task1 이름 = " + textList[async][0]);
+                    Debug.WriteLine(async + " -- task1 결과 = " + task_luis.Result["topScoringIntent"]["score"]);
+
+                    //최저 스코어 체크
+                    //if ((float)task_luis.Result["topScoringIntent"]["score"] > Convert.ToDouble(LUIS_SCORE_LIMIT))
+                    //{
+                    //    //이전 json 확인
+                    //    if (Luis_before.Count != 0)
+                    //    {
+                    //        //이전 topScoringIntent 비교
+                    //        if ((float)task_luis.Result["topScoringIntent"]["score"] > (float)Luis_before["topScoringIntent"]["score"])
+                    //        {
+                    //            Debug.WriteLine("task_luis = " + (float)task_luis.Result["topScoringIntent"]["score"]);
+                    //            Debug.WriteLine("Luis_before = " + (float)Luis_before["topScoringIntent"]["score"]);
+                    //            Luis = Luis_before;
+                    //            returnLuisName = textList[async][0];
+                    //        }
+                    //    }
+                    //    else
+                    //    {
+                    //        Luis_before = task_luis.Result;
+                    //        returnLuisName = textList[async][0];
+                    //    }
+                    //}
+
+                    Luis_before[async] = task_luis.Result;
+                    returnLuisName[async] = textList[async][0];
+
+                }
+                catch (AggregateException e)
+                {
+                    Debug.WriteLine("error = " + e.Message);
+                }
 
             });
+            
             watch.Stop();
+            //Luis = Luis_before;
 
-            Debug.WriteLine(watch.Elapsed.ToString());
-        }
-
-        
-        private static string JsonParsing(string a)
-        {
-            Dictionary<string, JsonParseModel> jsonType = new Dictionary<string, JsonParseModel>();
-            string result = "";
-            var JSONObj = new JavaScriptSerializer().Deserialize<JsonParseModel>(a);
-            if (JSONObj.status == 200)
+            try
             {
-
-                result = JSONObj.dialogs[0].type;
-
-                return result;
-            }
-
-
-            return null;
-        }
-
-        //Dictionary<string,int> _DicSample;
-        private static TextDlgApiModel TextJsonParsing(string a)
-        {
-            Dictionary<string, TextDlgApiModel> textValues = new Dictionary<string, TextDlgApiModel>();
-
-            var textJSONObj = new JavaScriptSerializer().Deserialize<TextDlgApiModel>(a);
-            if (textJSONObj.status == 200)
-            {
-                Debug.WriteLine(textJSONObj.conversationId);
-                Debug.WriteLine(textJSONObj.status);
-                Debug.WriteLine(textJSONObj.dialogCount);
-                Debug.WriteLine(textJSONObj.dialogs.Count);
-
-                for (int i = 0; i < textJSONObj.dialogs.Count; i++)
+                for (int i = 0; i < MAX; i++)
                 {
-                    Debug.WriteLine(textJSONObj.dialogs[i].type);
-                    Debug.WriteLine(textJSONObj.dialogs[i].title);
-                    Debug.WriteLine(textJSONObj.dialogs[i].text);
-
-                    //textValues.Add
-
-
-                }
-                return textJSONObj;
-            }
-
-
-            return null;
-        }
-
-        private static CarouselDlgApiModel CardJsonParsing(string a)
-        {
-            Dictionary<string, CarouselDlgApiModel> cardValues = new Dictionary<string, CarouselDlgApiModel>();
-
-            var carouselJSONObj = new JavaScriptSerializer().Deserialize<CarouselDlgApiModel>(a);
-            if (carouselJSONObj.status == 200)
-            {
-                Debug.WriteLine(carouselJSONObj.conversationId);
-                Debug.WriteLine(carouselJSONObj.status);
-                Debug.WriteLine(carouselJSONObj.dialogCount);
-                Debug.WriteLine(carouselJSONObj.dialogs.Count);
-
-                for (int i = 0; i < carouselJSONObj.dialogs.Count; i++)
-                {
-                    Debug.WriteLine(carouselJSONObj.dialogs[i].type);
-                    Debug.WriteLine(carouselJSONObj.dialogs[i].herocards.Count);
-
-
-                    for (int n = 0; n < carouselJSONObj.dialogs[i].herocards.Count; n++)
+                    Debug.WriteLine("i = " + Luis_before[i]["topScoringIntent"]["score"]);
+                    Debug.WriteLine("ij = " + returnLuisName[i]);
+                    if(i == 0)
                     {
-                        Debug.WriteLine(carouselJSONObj.dialogs[i].herocards[n].type);
-                        Debug.WriteLine(carouselJSONObj.dialogs[i].herocards[n].title);
-                        Debug.WriteLine(carouselJSONObj.dialogs[i].herocards[n].subtitle);
-                        Debug.WriteLine(carouselJSONObj.dialogs[i].herocards[n].text);
-                        Debug.WriteLine(carouselJSONObj.dialogs[i].herocards[n].media_url);
-                        Debug.WriteLine(carouselJSONObj.dialogs[i].herocards[n].card_division);
-                        Debug.WriteLine(carouselJSONObj.dialogs[i].herocards[n].card_value);
-                        Debug.WriteLine(carouselJSONObj.dialogs[i].herocards[n].buttons.Count);
-
-                        for (int m = 0; m < carouselJSONObj.dialogs[i].herocards[n].buttons.Count; m++)
+                        Luis = Luis_before[0];
+                        LuisName = returnLuisName[0];
+                    } else
+                    {
+                        if (((float)Luis["topScoringIntent"]["score"] < (float)Luis_before[i]["topScoringIntent"]["score"]) && Luis_before[i]["topScoringIntent"]["intent"].ToString() != "None")
                         {
-                            Debug.WriteLine(carouselJSONObj.dialogs[i].herocards[n].buttons[m].type);
-                            Debug.WriteLine(carouselJSONObj.dialogs[i].herocards[n].buttons[m].title);
-                            Debug.WriteLine(carouselJSONObj.dialogs[i].herocards[n].buttons[m].values);
+                            Luis = Luis_before[i];
+                            LuisName = returnLuisName[i];  
                         }
-
                     }
 
                 }
-                return carouselJSONObj;
             }
-
-
-            return null;
-        }
-
-        private static MediaDlgApiModel MediaJsonParsing(string a)
-        {
-            Dictionary<string, MediaDlgApiModel> MediaValues = new Dictionary<string, MediaDlgApiModel>();
-
-            var mediaJSONObj = new JavaScriptSerializer().Deserialize<MediaDlgApiModel>(a);
-            if (mediaJSONObj.status == 200)
+            catch (IndexOutOfRangeException e)
             {
-                Debug.WriteLine(mediaJSONObj.conversationId);
-                Debug.WriteLine(mediaJSONObj.status);
-                Debug.WriteLine(mediaJSONObj.dialogCount);
-                Debug.WriteLine(mediaJSONObj.dialogs.Count);
-
-                for (int i = 0; i < mediaJSONObj.dialogs.Count; i++)
-                {
-                    Debug.WriteLine(mediaJSONObj.dialogs[i].type);
-                    Debug.WriteLine(mediaJSONObj.dialogs[i].title);
-                    Debug.WriteLine(mediaJSONObj.dialogs[i].text);
-                    Debug.WriteLine(mediaJSONObj.dialogs[i].media_url);
-                    Debug.WriteLine(mediaJSONObj.dialogs[i].card_division);
-                    Debug.WriteLine(mediaJSONObj.dialogs[i].card_value);
-                    Debug.WriteLine(mediaJSONObj.dialogs[i].buttons.Count);
-
-                    for (int n = 0; n < mediaJSONObj.dialogs[i].buttons.Count; n++)
-                    {
-                        Debug.WriteLine(mediaJSONObj.dialogs[i].buttons[n].type);
-                        Debug.WriteLine(mediaJSONObj.dialogs[i].buttons[n].title);
-                        Debug.WriteLine(mediaJSONObj.dialogs[i].buttons[n].values);
-                    }
-
-                }
-                return mediaJSONObj;
+                Debug.WriteLine("error = " + e.Message);
             }
 
-
-            return null;
+            //Debug.WriteLine(watch.Elapsed.ToString());
+            //Debug.WriteLine("Luis_SCORE = " + (float)Luis["topScoringIntent"]["score"]);
+            //Debug.WriteLine("Luis_nm = " + LuisName);
+            //Debug.WriteLine("Luis = " + Luis);
+            return LuisName;
         }
-
- //       public static void SetupLuis<D>(
- //           Mock<ILuisService> luis,
- //           Expression<Func<D, Task>> expression,
- //           double? score,
- //           params EntityRecommendation[] entities
- //           )
- //       {
- //           luis
- //               .Setup(l => l.QueryAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
- //               .ReturnsAsync(new LuisResult()
- //               {
- //                   Intents = IntentsFor(expression, score),
- //                   Entities = entities
- //               });
- //       }
-
- //       public static IntentRecommendation[] IntentsFor<D>(Expression<Func<D, Task>> expression, double? score)
- //       {
- //           var body = (MethodCallExpression)expression.Body;
- //           var attributes = body.Method.GetCustomAttributes<LuisIntentAttribute>();
- //           var intents = attributes
- //               .Select(attribute => new IntentRecommendation(attribute.IntentName, score))
- //               .ToArray();
- //           return intents;
- //       }
-
- //       public void Uri_Building()
- //       {
- //           const string Model = "model";
- //           const string Subscription = "subscription";
- //           const string Domain = "domain";
- //           const string Text = "text";
-
-
- //           // TODO: xunit theory 
- //           var tests = new[]
- //           { 
- //#pragma warning disable CS0612 
- //                new { m = new LuisModelAttribute(Model, Subscription, LuisApiVersion.V1, null) { }, u = new Uri("https://api.projectoxford.ai/luis/v1/application?subscription-key=subscription&q=text&id=model&log=True") },
- //                new { m = new LuisModelAttribute(Model, Subscription, LuisApiVersion.V1, null) { Log = false, SpellCheck = false, Staging = false, TimezoneOffset = 1, Verbose = false }, u = new Uri("https://api.projectoxford.ai/luis/v1/application?subscription-key=subscription&q=text&id=model&log=False&spellCheck=False&staging=False&timezoneOffset=1&verbose=False") },
- //                new { m = new LuisModelAttribute(Model, Subscription, LuisApiVersion.V1, Domain) { Log = true, SpellCheck = true, Staging = true, TimezoneOffset = 2, Verbose = true }, u = new Uri("https://api.projectoxford.ai/luis/v1/application?subscription-key=subscription&q=text&id=model&log=True&spellCheck=True&staging=True&timezoneOffset=2&verbose=True") }, 
- //#pragma warning restore CS0612 
- //                new { m = new LuisModelAttribute(Model, Subscription, LuisApiVersion.V2, null) { }, u = new Uri("https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/model?subscription-key=subscription&q=text&log=True") },
- //                new { m = new LuisModelAttribute(Model, Subscription, LuisApiVersion.V2, null) { Log = false, SpellCheck = false, Staging = false, TimezoneOffset = 1, Verbose = false }, u = new Uri("https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/model?subscription-key=subscription&q=text&log=False&spellCheck=False&staging=False&timezoneOffset=1&verbose=False") },
- //                new { m = new LuisModelAttribute(Model, Subscription, LuisApiVersion.V2, Domain) { Log = true, SpellCheck = true, Staging = true, TimezoneOffset = 2, Verbose = true }, u = new Uri("https://domain/luis/v2.0/apps/model?subscription-key=subscription&q=text&log=True&spellCheck=True&staging=True&timezoneOffset=2&verbose=True") },
- //            };
-
-
- //           foreach (var test in tests)
- //           {
- //               ILuisService service = new LuisService(test.m);
- //               var actual = service.BuildUri(Text);
- //               Assert.AreEqual(test.u, actual);
- //           }
- //       }
-
-
     }
 }

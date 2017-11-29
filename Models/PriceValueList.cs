@@ -11,6 +11,6 @@ namespace KonaChatBot.Models
         public int price { get; set; }
         public string saleCd { get; set; }
         public string fnumCd { get; set; }
-        
+
     }
 }

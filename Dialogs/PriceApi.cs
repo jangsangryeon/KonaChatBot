@@ -8,6 +8,7 @@ using KonaChatBot.Models;
 using System.Diagnostics;
 using System.Net.Http;
 using Newtonsoft.Json;
+using SecCsChatBotDemo.Models;
 
 namespace KonaChatBot.Dialogs
 {
@@ -45,7 +46,7 @@ namespace KonaChatBot.Dialogs
             List<Price_API_DLG> priceApiDlgList = new List<Price_API_DLG>();
             List<PriceMediaDlgList> priceMediaDlgList = new List<PriceMediaDlgList>();
 
-            String entitlekeywordgroup = "",  entitlekeyworddetail = "";
+            String entitlekeywordgroup = "", entitlekeyworddetail = "";
 
             var reply = context.MakeMessage();
             reply.AttachmentLayout = AttachmentLayoutTypes.Carousel;
@@ -55,7 +56,7 @@ namespace KonaChatBot.Dialogs
                 entitlekeywordgroup += keyword.keywordgroup + ",";
                 entitlekeyworddetail += keyword.keyworddetail + "=" + keyword.keyword + ",";
             }
-
+            entitlekeyworddetail = entitlekeyworddetail.Substring(0, entitlekeyworddetail.Length - 1);
             if (entitlekeywordgroup.Contains("TRIMWORD"))
             {
 
@@ -75,15 +76,14 @@ namespace KonaChatBot.Dialogs
 
                         if (priceApiDlgList[i].dlgType == "TEXT")
                         {
-                            await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText);
+                            string carModelNm = db.SelectPriceModelValue("TRIMWORD,INTERIORWORD", entitlekeyworddetail);
+                            await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId, carModelNm)[0].cardText);
                         }
                         else if (priceApiDlgList[i].dlgType == "MEDIA")
                         {
                             Debug.WriteLine("card dlg id = " + priceApiDlgList[i].priceDlgId);
                             Debug.WriteLine("entitlekeyworddetail = " + entitlekeyworddetail);
-
                             priceMediaDlgList = db.SelectPriceMediaDlgList(priceApiDlgList[i].priceDlgId, "TRIMWORD,EXTERIORWORD", entitlekeyworddetail);
-
                         }
 
                     }
@@ -104,13 +104,41 @@ namespace KonaChatBot.Dialogs
 
                         if (priceApiDlgList[i].dlgType == "TEXT")
                         {
+                            string carModelNm = db.SelectPriceModelValue("TRIMWORD,INTERIORWORD", entitlekeyworddetail);
                             //db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText;
-                            await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText);
+                            await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId, carModelNm)[0].cardText);
                         }
                         else if (priceApiDlgList[i].dlgType == "MEDIA")
                         {
                             Debug.WriteLine("card dlg id = " + priceApiDlgList[i].priceDlgId);
                             priceMediaDlgList = db.SelectPriceMediaDlgList(priceApiDlgList[i].priceDlgId, "TRIMWORD,INTERIORWORD", entitlekeyworddetail);
+                        }
+
+                    }
+                }
+                else if (entitlekeywordgroup.Contains("OPTIONWORD"))
+                {
+                    //entities "옵션"
+                    Debug.WriteLine("TRIMWORD,OPTIONWORD entitlekeyworddetail : " + entitlekeyworddetail);
+                    priceApiDlgList = db.SelectPriceList_API_DLG("TRIMWORD,OPTIONWORD");
+
+                    for (int i = 0; i < priceApiDlgList.Count; i++)
+                    {
+
+                        Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].keywordGrp);
+                        Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].priceDlgId);
+                        Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].dlgType);
+
+
+                        if (priceApiDlgList[i].dlgType == "TEXT")
+                        {
+                            string carModelNm = db.SelectPriceModelValue("TRIMWORD,INTERIORWORD", entitlekeyworddetail);
+                            await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId, carModelNm)[0].cardText);
+                        }
+                        else if (priceApiDlgList[i].dlgType == "MEDIA")
+                        {
+                            Debug.WriteLine("card dlg id = " + priceApiDlgList[i].priceDlgId);
+                            priceMediaDlgList = db.SelectPriceMediaDlgList(priceApiDlgList[i].priceDlgId, "TRIMWORD,OPTIONWORD", entitlekeyworddetail);
                         }
 
                     }
@@ -131,8 +159,8 @@ namespace KonaChatBot.Dialogs
 
                         if (priceApiDlgList[i].dlgType == "TEXT")
                         {
-                            //db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText;
-                            await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText);
+                            string carModelNm = db.SelectPriceModelValue("TRIMWORD,INTERIORWORD", entitlekeyworddetail);
+                            await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId, carModelNm)[0].cardText);
                         }
                         else if (priceApiDlgList[i].dlgType == "MEDIA")
                         {
@@ -160,7 +188,7 @@ namespace KonaChatBot.Dialogs
                     if (priceApiDlgList[i].dlgType == "TEXT")
                     {
                         //db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText;
-                        await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText);
+                        await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId, "")[0].cardText);
                     }
                     else if (priceApiDlgList[i].dlgType == "MEDIA")
                     {
@@ -187,7 +215,7 @@ namespace KonaChatBot.Dialogs
                     if (priceApiDlgList[i].dlgType == "TEXT")
                     {
                         //db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText;
-                        await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText);
+                        await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId, "")[0].cardText);
                     }
                     else if (priceApiDlgList[i].dlgType == "MEDIA")
                     {
@@ -214,7 +242,7 @@ namespace KonaChatBot.Dialogs
                     if (priceApiDlgList[i].dlgType == "TEXT")
                     {
                         //db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText;
-                        await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText);
+                        await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId, "")[0].cardText);
                     }
                     else if (priceApiDlgList[i].dlgType == "MEDIA")
                     {
@@ -241,7 +269,7 @@ namespace KonaChatBot.Dialogs
                     if (priceApiDlgList[i].dlgType == "TEXT")
                     {
                         //db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText;
-                        await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText);
+                        await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId, "")[0].cardText);
                     }
                     else if (priceApiDlgList[i].dlgType == "MEDIA")
                     {
@@ -268,7 +296,7 @@ namespace KonaChatBot.Dialogs
                     if (priceApiDlgList[i].dlgType == "TEXT")
                     {
                         //db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText;
-                        await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText);
+                        await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId, "")[0].cardText);
                     }
                     else if (priceApiDlgList[i].dlgType == "MEDIA")
                     {
@@ -295,7 +323,7 @@ namespace KonaChatBot.Dialogs
                     if (priceApiDlgList[i].dlgType == "TEXT")
                     {
                         //db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText;
-                        await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText);
+                        await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId, "")[0].cardText);
                     }
                     else if (priceApiDlgList[i].dlgType == "MEDIA")
                     {
@@ -322,7 +350,7 @@ namespace KonaChatBot.Dialogs
                     if (priceApiDlgList[i].dlgType == "TEXT")
                     {
                         //db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText;
-                        await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText);
+                        await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId, "")[0].cardText);
                     }
                     else if (priceApiDlgList[i].dlgType == "MEDIA")
                     {
@@ -349,7 +377,7 @@ namespace KonaChatBot.Dialogs
                     if (priceApiDlgList[i].dlgType == "TEXT")
                     {
                         //db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText;
-                        await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText);
+                        await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId, "")[0].cardText);
                     }
                     else if (priceApiDlgList[i].dlgType == "MEDIA")
                     {
@@ -377,10 +405,10 @@ namespace KonaChatBot.Dialogs
                     Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].dlgType);
 
 
-                    if(priceApiDlgList[i].dlgType == "TEXT")
+                    if (priceApiDlgList[i].dlgType == "TEXT")
                     {
                         //db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText;
-                        await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText);
+                        await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId, "")[0].cardText);
                     }
                     else if (priceApiDlgList[i].dlgType == "MEDIA")
                     {
@@ -402,24 +430,30 @@ namespace KonaChatBot.Dialogs
             Translator trimTranslateInfo;
             Translator titleTranslateInfo;
 
-            if (priceMediaDlgList.Count > 0 )
+
+
+            if (priceMediaDlgList.Count > 0)
             {
+                string cardDiv = "";
+                string cardVal = "";
+
                 for (int i = 0; i < priceMediaDlgList.Count; i++)
                 {
                     engineTranslateInfo = await getTranslate(priceMediaDlgList[i].engine);
                     trimTranslateInfo = await getTranslate(priceMediaDlgList[i].trim);
                     titleTranslateInfo = await getTranslate(priceMediaDlgList[i].cardTitle);
-
+                     
                     //translateInfo.data.translations[0].translatedText.Replace("&#39;", "'")
-                    Debug.WriteLine("priceMediaDlgList[i].cardTitle color : " + engineTranslateInfo.data.translations[0].translatedText);
-                    Debug.WriteLine("priceMediaDlgList[i].cardTitle color : " + trimTranslateInfo.data.translations[0].translatedText);
-                    Debug.WriteLine("priceMediaDlgList[i].cardTitle color : " + titleTranslateInfo.data.translations[0].translatedText);
-                    Debug.WriteLine("AA : " + priceMediaDlgList[i].mediaUrl);
-                    Debug.WriteLine("AA : " + priceMediaDlgList[i].mediaUrl.Replace("CALL(ENGINEIMAGE_URL)", engineTranslateInfo.data.translations[0].translatedText.Replace(" ","")).Replace("CALL(TRIMIMAGE_URL)", trimTranslateInfo.data.translations[0].translatedText.Replace(" ", "")).Replace("CALL(IMAGE_URL)", titleTranslateInfo.data.translations[0].translatedText));
+                    //Debug.WriteLine("priceMediaDlgList[i].cardTitle color : " + engineTranslateInfo.data.translations[0].translatedText);
+                    //Debug.WriteLine("priceMediaDlgList[i].cardTitle color : " + trimTranslateInfo.data.translations[0].translatedText);
+                    //Debug.WriteLine("priceMediaDlgList[i].cardTitle color : " + titleTranslateInfo.data.translations[0].translatedText);
+                    //Debug.WriteLine("AA : " + priceMediaDlgList[i].mediaUrl);
+                    //Debug.WriteLine("AA : " + priceMediaDlgList[i].mediaUrl.Replace("CALL(ENGINEIMAGE_URL)", engineTranslateInfo.data.translations[0].translatedText.Replace(" ", "")).Replace("CALL(TRIMIMAGE_URL)", trimTranslateInfo.data.translations[0].translatedText.Replace(" ", "")).Replace("CALL(IMAGE_URL)", titleTranslateInfo.data.translations[0].translatedText));
+                    //Debug.WriteLine("AA : " + priceMediaDlgList[i].mediaUrl.Replace("CALL(OPTIMAGE_URL)", titleTranslateInfo.data.translations[0].translatedText.Replace(" ", "_")).Replace("CALL(ENGINEIMAGE_URL)", engineTranslateInfo.data.translations[0].translatedText.Replace(" ", "")).Replace("CALL(TRIMIMAGE_URL)", trimTranslateInfo.data.translations[0].translatedText.Replace(" ", "")).Replace("CALL(IMAGE_URL)", titleTranslateInfo.data.translations[0].translatedText));
                     //CardImage 입력
-                    CardImage cardImage = new CardImage()
+                    CardImage cardImage = new CardImage()     
                     {
-                        Url = priceMediaDlgList[i].mediaUrl.Replace("CALL(ENGINEIMAGE_URL)", engineTranslateInfo.data.translations[0].translatedText.Replace(" ", "")).Replace("CALL(TRIMIMAGE_URL)", trimTranslateInfo.data.translations[0].translatedText.Replace(" ", "")).Replace("CALL(IMAGE_URL)", titleTranslateInfo.data.translations[0].translatedText)
+                        Url = priceMediaDlgList[i].mediaUrl.Replace("CALL(OPTIMAGE_URL)", titleTranslateInfo.data.translations[0].translatedText.Replace(" ", "_")).Replace("CALL(ENGINEIMAGE_URL)", engineTranslateInfo.data.translations[0].translatedText.Replace(" ", "")).Replace("CALL(TRIMIMAGE_URL)", trimTranslateInfo.data.translations[0].translatedText.Replace(" ", "")).Replace("CALL(IMAGE_URL)", titleTranslateInfo.data.translations[0].translatedText.Replace(" ", "").Replace("DarkKnight", "DarkNight"))
                     };
 
                     //CardAction 입력
@@ -468,6 +502,18 @@ namespace KonaChatBot.Dialogs
                         cardButtons.Add(plButton);
                     }
 
+                    if (priceMediaDlgList[i].cardDivision.Length != 0)
+                    {
+                        cardDiv = priceMediaDlgList[i].cardDivision;
+                    }
+
+                    if (priceMediaDlgList[i].cardValue.Length != 0)
+                    {
+                        //cardVal = priceMediaDlgList[i].cardValue.Replace();
+                        cardVal = priceMediaDlgList[i].cardValue.Replace("CALL(OPTIMAGE_URL)", titleTranslateInfo.data.translations[0].translatedText.Replace(" ", "_")).Replace("CALL(IMAGE_URL)", titleTranslateInfo.data.translations[0].translatedText.Replace(" ", "").Replace("DarkKnight", "DarkNight"));
+                    }
+
+
                     ////맵에서 text로 출력되는 주소값 치환
                     //if (!string.IsNullOrEmpty(replaceStr))
                     //{
@@ -478,7 +524,7 @@ namespace KonaChatBot.Dialogs
                     //}
 
 
-                    reply.Attachments.Add(GetHeroCard(priceMediaDlgList[i].cardTitle, priceMediaDlgList[i].cardSubTitle, priceMediaDlgList[i].cardText, cardImage, cardButtons));
+                    reply.Attachments.Add(GetHeroCard(priceMediaDlgList[i].cardTitle, priceMediaDlgList[i].cardSubTitle, priceMediaDlgList[i].cardText, cardImage, cardButtons, cardDiv, cardVal));
                 }
                 await context.PostAsync(reply);
             }
@@ -593,15 +639,18 @@ namespace KonaChatBot.Dialogs
             //
             //}
         }
-        private static Attachment GetHeroCard(string title, string subtitle, string text, CardImage cardImage, /*CardAction cardAction*/ List<CardAction> buttons)
+        private static Attachment GetHeroCard(string title, string subtitle, string text, CardImage cardImage, /*CardAction cardAction*/ List<CardAction> buttons, string cardDivision, string cardValue)
         {
-            var heroCard = new HeroCard
+            var heroCard = new UserHeroCard
             {
                 Title = title,
                 Subtitle = subtitle,
                 Text = text,
                 Images = new List<CardImage>() { cardImage },
                 Buttons = buttons,
+                Card_division = cardDivision,
+                Card_value = cardValue,
+
             };
 
             return heroCard.ToAttachment();

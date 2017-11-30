@@ -75,17 +75,18 @@ namespace KonaChatBot
 			if (activity.Type == ActivityTypes.ConversationUpdate && activity.MembersAdded.Any(m => m.Id == activity.Recipient.Id))
             {
                 startTime = DateTime.Now;
-                
+
                 //파라메터 호출
-                
-                if(LUIS_NM.Count(s => s != null) > 0)
+                if (LUIS_NM.Count(s => s != null) > 0)
                 {
-                    string[] LUIS_NM = new string[10];
+                    //string[] LUIS_NM = new string[10];
+                    Array.Clear(LUIS_NM, 0,10);
                 }
 
                 if (LUIS_APP_ID.Count(s => s != null) > 0)
                 {
-                    string[] LUIS_APP_ID = new string[10];
+                    //string[] LUIS_APP_ID = new string[10];
+                    Array.Clear(LUIS_APP_ID, 0, 10);
                 }
                 //Array.Clear(LUIS_APP_ID, 0, 10);
                 List<ConfList> confList = db.SelectConfig();

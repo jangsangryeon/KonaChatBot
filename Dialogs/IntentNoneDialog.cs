@@ -292,8 +292,8 @@
             {
                 await this.SendSorryMessageAsync(context);
             }
-            context.Wait(this.MessageReceivedAsync);
-		}
+            context.Done<IMessageActivity>(null);
+        }
 
 		private async Task MessageReceivedAsync(IDialogContext context, IAwaitable<IMessageActivity> result)
 		{

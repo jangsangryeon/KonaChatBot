@@ -633,17 +633,28 @@ namespace KonaChatBot
                 {
                     Debug.WriteLine("i = " + Luis_before[i]["topScoringIntent"]["score"]);
                     Debug.WriteLine("ij = " + returnLuisName[i]);
-                    if(i == 0)
+
+                    //entities 가 없을때 score 0으로 설정
+                    if ((int)Luis_before[i]["entities"].Count() < 1)
+                    {
+                        Luis_before[i]["topScoringIntent"]["score"] = 0;
+                    }
+                    
+                    if (i == 0)
                     {
                         Luis = Luis_before[0];
                         LuisName = returnLuisName[0];
                     } else
                     {
+
                         if (((float)Luis["topScoringIntent"]["score"] < (float)Luis_before[i]["topScoringIntent"]["score"]) && Luis_before[i]["topScoringIntent"]["intent"].ToString() != "None")
                         {
-                            Luis = Luis_before[i];
-                            LuisName = returnLuisName[i];  
-                        }
+                            if (Luis_before[i]["entities"].Count() > 0)
+                            {
+                                Luis = Luis_before[i];
+                                LuisName = returnLuisName[i];
+                            }
+                        }                      
                     }
 
                 }

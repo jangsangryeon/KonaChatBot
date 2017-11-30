@@ -252,13 +252,7 @@ namespace KonaChatBot.Dialogs
 
             }
             //context.Wait(this.MessageReceivedAsync);
-            context.Done("");
-        }
-
-
-        private async Task MessageReceivedAsync(IDialogContext context, IAwaitable<object> result)
-        {
-            
+            context.Done<IMessageActivity>(null);
         }
 
 

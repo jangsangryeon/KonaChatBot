@@ -80,13 +80,13 @@ namespace KonaChatBot
                 if (LUIS_NM.Count(s => s != null) > 0)
                 {
                     //string[] LUIS_NM = new string[10];
-                    Array.Clear(LUIS_NM, 0,10);
+                    Array.Clear(LUIS_NM, 0, LUIS_NM.Length);
                 }
 
                 if (LUIS_APP_ID.Count(s => s != null) > 0)
                 {
                     //string[] LUIS_APP_ID = new string[10];
-                    Array.Clear(LUIS_APP_ID, 0, 10);
+                    Array.Clear(LUIS_APP_ID, 0, LUIS_APP_ID.Length);
                 }
                 //Array.Clear(LUIS_APP_ID, 0, 10);
                 List<ConfList> confList = db.SelectConfig();
@@ -559,6 +559,7 @@ namespace KonaChatBot
 
             int MAX = LUIS_APP_ID.Count(s => s != null);
             Array.Resize(ref LUIS_APP_ID, MAX);
+            Array.Resize(ref LUIS_NM, MAX);
 
             String[] returnLuisName = new string[MAX];
             JObject[] Luis_before = new JObject[MAX];

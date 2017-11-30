@@ -123,20 +123,30 @@ namespace KonaChatBot.Dialogs
                 //    reply.Attachments.Clear();
                 //}
             }
+            DateTime endTime = DateTime.Now;
+            Debug.WriteLine("프로그램 수행시간 : {0}/ms", ((endTime - MessagesController.startTime).Milliseconds));
+            Debug.WriteLine("* activity.Type : " + activity.Type);
+            Debug.WriteLine("* activity.Recipient.Id : " + activity.Recipient.Id);
+            Debug.WriteLine("* activity.ServiceUrl : " + activity.ServiceUrl);
+
+            int dbResult = db.insertUserQuery(MessagesController.queryStr, MessagesController.luisIntent, MessagesController.luisEntities, "0", MessagesController.luisId, 'H', 0);
+            Debug.WriteLine("INSERT QUERY RESULT : " + dbResult.ToString());
+
+            if (db.insertHistory(activity.Conversation.Id, MessagesController.queryStr, MessagesController.relationList[0].dlgId.ToString(), activity.ChannelId, ((endTime - MessagesController.startTime).Milliseconds), 0) > 0)
+            {
+                Debug.WriteLine("HISTORY RESULT SUCCESS");
+                //HistoryLog("HISTORY RESULT SUCCESS");
+            }
+            else
+            {
+                Debug.WriteLine("HISTORY RESULT SUCCESS");
+                //HistoryLog("HISTORY RESULT FAIL");
+            }
             context.ConversationData.SetValue("commonBeforeQustion", orgMent);
-            //context.Done(true);
-            //context.Wait(this.MessageReceivedAsync);
-            //context.Done<object>(new object());
             context.Done<IMessageActivity>(null);
         }
 
 
-        private async Task MessageReceivedAsync(IDialogContext context, IAwaitable<IMessageActivity> result)
-        {
-            
-
-
-        }
         private static Attachment GetHeroCard(string title, string subtitle, string text, CardImage cardImage, /*CardAction cardAction*/ List<CardAction> buttons, string cardDivision, string cardValue)
         {
             var heroCard = new UserHeroCard

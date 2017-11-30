@@ -621,29 +621,11 @@ namespace KonaChatBot.Dialogs
                 }
                 await context.PostAsync(reply);
                 //response = Request.CreateResponse(HttpStatusCode.OK);
-                //return Task.FromResult<object>(null);
+                
 
 
             }
-            DateTime endTime = DateTime.Now;
-            Debug.WriteLine("프로그램 수행시간 : {0}/ms", ((endTime - MessagesController.startTime).Milliseconds));
-            Debug.WriteLine("* activity.Type : " + context.Activity.Type);
-            Debug.WriteLine("* activity.Recipient.Id : " + context.Activity.Recipient.Id);
-            Debug.WriteLine("* activity.ServiceUrl : " + context.Activity.ServiceUrl);
-            //var message = await result;
-            int dbResult = db.insertUserQuery(Regex.Replace(MessagesController.queryStr, @"[^a-zA-Z0-9ㄱ-힣]", "", RegexOptions.Singleline), MessagesController.cacheList.luisIntent, MessagesController.cacheList.luisEntities, "0", MessagesController.cacheList.luisId, 'H', 0);
-            Debug.WriteLine("INSERT QUERY RESULT : " + dbResult.ToString());
-
-            if (db.insertHistory(context.Activity.Conversation.Id, Regex.Replace(MessagesController.queryStr, @"[^a-zA-Z0-9ㄱ-힣]", "", RegexOptions.Singleline), MessagesController.cacheList.luisIntent, context.Activity.ChannelId, ((endTime - MessagesController.startTime).Milliseconds), 0) > 0)
-            {
-                Debug.WriteLine("HISTORY RESULT SUCCESS");
-                //HistoryLog("HISTORY RESULT SUCCESS");
-            }
-            else
-            {
-                Debug.WriteLine("HISTORY RESULT SUCCESS");
-                //HistoryLog("HISTORY RESULT FAIL");
-            }
+            context.Done<IMessageActivity>(null);
         }
         
         private static Attachment GetHeroCard(string title, string subtitle, string text, CardImage cardImage, /*CardAction cardAction*/ List<CardAction> buttons, string cardDivision, string cardValue)

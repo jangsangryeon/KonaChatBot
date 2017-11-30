@@ -2,12 +2,12 @@
 {
     public class RecommendContextConstants
     {
-        public const string Use = "use";
+        public const string Use = "Use";
 
-        public const string Important = "important";
+        public const string Important = "Important";
 
-        public const string Age = "age";
+        public const string Age = "Age";
 
-        public const string Gender = "gender";
+        public const string Gender = "Gender";
     }
 }

@@ -33,12 +33,7 @@ namespace KonaChatBot.Dialogs
 
         public async Task StartAsync(IDialogContext context)
         {
-            context.Wait(this.MessageReceivedAsync);
-        }
-
-
-        private async Task MessageReceivedAsync(IDialogContext context, IAwaitable<object> result)
-        {
+            //context.Wait(this.MessageReceivedAsync);
             //지역변수 인텐트 엔티티로 결과값 조회
             // Db
             DbConnect db = new DbConnect();
@@ -46,93 +41,93 @@ namespace KonaChatBot.Dialogs
             // 변수 선언
             string replaceStr = "";
             //현재위치사용승인
-            var activity = (Activity)await result;
+            var activity = context.Activity;
             var connector = new ConnectorClient(new Uri(activity.ServiceUrl));
             queryStr = MessagesController.queryStr;
 
-            var facebooklocation = activity.Entities?.Where(t => t.Type == "Place").Select(t => t.GetAs<Place>()).FirstOrDefault();
-            if (facebooklocation != null)
-            {
-                try
-                {
-                    var geo = (facebooklocation.Geo as JObject)?.ToObject<GeoCoordinates>();
-                    if (geo != null)
-                    {
-                        //HistoryLog("[activity.Text]2 ==>> activity.Text :: location [" + activity.Text + "]");
-                        //HistoryLog("[logic start] ==>> userID :: location [" + geo.Longitude + " " + geo.Latitude + "]");
-                        queryStr = "current location:" + geo.Longitude + ":" + geo.Latitude;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine("ex : " + ex.ToString());
-                    //HistoryLog("[logic start] ==>> userID :: location error [" + activity.Conversation.Id + "]");
-                }
-            }
+            //var facebooklocation = activity.Entities?.Where(t => t.Type == "Place").Select(t => t.GetAs<Place>()).FirstOrDefault();
+            //if (facebooklocation != null)
+            //{
+            //    try
+            //    {
+            //        var geo = (facebooklocation.Geo as JObject)?.ToObject<GeoCoordinates>();
+            //        if (geo != null)
+            //        {
+            //            //HistoryLog("[activity.Text]2 ==>> activity.Text :: location [" + activity.Text + "]");
+            //            //HistoryLog("[logic start] ==>> userID :: location [" + geo.Longitude + " " + geo.Latitude + "]");
+            //            queryStr = "current location:" + geo.Longitude + ":" + geo.Latitude;
+            //        }
+            //    }
+            //    catch (Exception ex)
+            //    {
+            //        Debug.WriteLine("ex : " + ex.ToString());
+            //        //HistoryLog("[logic start] ==>> userID :: location error [" + activity.Conversation.Id + "]");
+            //    }
+            //}
 
-            if (queryStr.Contains("current location"))
-            {
-                if (activity.ChannelId == "facebook" && facebooklocation == null)
-                {
-                    //testDriveWhereStr = "test drive center region=seoul,current location=current location,query=Approve your current location";
-                    /////////////////////////////////////////////////////////////////////////////////
-                    //facebook location start
-                    /////////////////////////////////////////////////////////////////////////////////
-                    //HistoryLog("[location test] conversation id :: [" + activity.Conversation.Id + "] start");
+            //if (queryStr.Contains("current location"))
+            //{
+            //    if (activity.ChannelId == "facebook" && facebooklocation == null)
+            //    {
+            //        //testDriveWhereStr = "test drive center region=seoul,current location=current location,query=Approve your current location";
+            //        /////////////////////////////////////////////////////////////////////////////////
+            //        //facebook location start
+            //        /////////////////////////////////////////////////////////////////////////////////
+            //        //HistoryLog("[location test] conversation id :: [" + activity.Conversation.Id + "] start");
 
-                    Activity reply_option = activity.CreateReply();
+            //        Activity reply_option = activity.CreateReply();
 
-                    reply_option.ChannelData = new FacebookMessage
-                    (
-                        text: "나와 함께 당신의 위치를 공유하십시오.",
-                        quickReplies: new List<FacebookQuickReply>
-                        {
-                                            // if content_type is location, title and payload are not used
-                                            // see https://developers.facebook.com/docs/messenger-platform/send-api-reference/quick-replies#fields
-                                            // for more information.
-                                            new FacebookQuickReply(
-                                                contentType: FacebookQuickReply.ContentTypes.Location,
-                                                title: default(string),
-                                                payload: default(string)
-                                            )
-                        }
-                    );
-                    var reply_facebook = await connector.Conversations.SendToConversationAsync(reply_option);
-                    //response = Request.CreateResponse(HttpStatusCode.OK);
-                    //return response;
-                    /////////////////////////////////////////////////////////////////////////////////
-                    //facebook location end
-                    /////////////////////////////////////////////////////////////////////////////////
-                }
-                else
-                {
-                    if (!queryStr.Contains(':'))
-                    {
-                        //첫번쨰 메세지 출력 x
-                        //response = Request.CreateResponse(HttpStatusCode.OK);
-                        //return response;
-                    }
-                    else
-                    {
-                        //위도경도에 따른 값 출력
-                        try
-                        {
-                            string regionStr = "";
-                            string location = queryStr;
-                            //테스트용
-                            //string location = "129.0929788:35.2686635";
-                            string[] location_result = location.Split(':');
-                            regionStr = db.LocationValue(location_result[1], location_result[2]);
+            //        reply_option.ChannelData = new FacebookMessage
+            //        (
+            //            text: "나와 함께 당신의 위치를 공유하십시오.",
+            //            quickReplies: new List<FacebookQuickReply>
+            //            {
+            //                                // if content_type is location, title and payload are not used
+            //                                // see https://developers.facebook.com/docs/messenger-platform/send-api-reference/quick-replies#fields
+            //                                // for more information.
+            //                                new FacebookQuickReply(
+            //                                    contentType: FacebookQuickReply.ContentTypes.Location,
+            //                                    title: default(string),
+            //                                    payload: default(string)
+            //                                )
+            //            }
+            //        );
+            //        var reply_facebook = await connector.Conversations.SendToConversationAsync(reply_option);
+            //        //response = Request.CreateResponse(HttpStatusCode.OK);
+            //        //return response;
+            //        /////////////////////////////////////////////////////////////////////////////////
+            //        //facebook location end
+            //        /////////////////////////////////////////////////////////////////////////////////
+            //    }
+            //    else
+            //    {
+            //        if (!queryStr.Contains(':'))
+            //        {
+            //            //첫번쨰 메세지 출력 x
+            //            //response = Request.CreateResponse(HttpStatusCode.OK);
+            //            //return response;
+            //        }
+            //        else
+            //        {
+            //            //위도경도에 따른 값 출력
+            //            try
+            //            {
+            //                string regionStr = "";
+            //                string location = queryStr;
+            //                //테스트용
+            //                //string location = "129.0929788:35.2686635";
+            //                string[] location_result = location.Split(':');
+            //                regionStr = db.LocationValue(location_result[1], location_result[2]);
 
-                            queryStr = regionStr + " 시승센터";
-                        }
-                        catch
-                        {
-                            queryStr = "서울 시승센터";
-                        }
-                    }
-                }
-            }
+            //                queryStr = regionStr + " 시승센터";
+            //            }
+            //            catch
+            //            {
+            //                queryStr = "서울 시승센터";
+            //            }
+            //        }
+            //    }
+            //}
 
             //엔티티 type, 엔티티 value 추출
             List<TestDriveList_API> SelectTestDriveList_API = db.SelectTestDriveList_API(queryStr);
@@ -258,6 +253,12 @@ namespace KonaChatBot.Dialogs
             }
             //context.Wait(this.MessageReceivedAsync);
             context.Done("");
+        }
+
+
+        private async Task MessageReceivedAsync(IDialogContext context, IAwaitable<object> result)
+        {
+            
         }
 
 

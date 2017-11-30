@@ -32,72 +32,75 @@ namespace KonaChatBot.Dialogs
 
         public async Task StartAsync(IDialogContext context)
         {
-            DbConnect db = new DbConnect();
-
-            //context.Wait(this.MessageReceivedAsync);
-            MessagesController.relationList = db.DefineTypeChk(MessagesController.luisId, MessagesController.luisIntent, MessagesController.luisEntities);
-            //relationList[0].dlgApiDefine.Equals("api testdrive")
-            switch (MessagesController.relationList[0].dlgApiDefine)
-            {
-                case "api testdrive":
-                    context.Call(new TestDriveApi(MessagesController.queryStr), this.ResumeAfterOptionDialog);
-                    break;
-                case "api quot":
-                    context.Call(new PriceApi(MessagesController.luisIntent, MessagesController.luisEntities, MessagesController.queryStr), this.ResumeAfterOptionDialog);
-                    break;
-                case "api recommend":
-                    context.Call(new RecommendApiDialog(), this.ResumeAfterOptionDialog);
-                    break;
-                default:
-                    context.Call(new CommonDialog("", MessagesController.queryStr), this.ResumeAfterOptionDialog);
-                    break;
-            }
-            //context.Wait(ResumeAfterOptionDialog);
+            context.Wait(this.MessageReceivedAsync);
         }
 
         public virtual async Task MessageReceivedAsync(IDialogContext context, IAwaitable<IMessageActivity> result)
         {
-            //DbConnect db = new DbConnect();
+            var message = await result;
+            var activity = context.Activity;
+            DbConnect db = new DbConnect();
 
-            //try
-            //{                
-            //    MessagesController.relationList = db.DefineTypeChk(luisId, luisIntent, luisEntities);
-            //    //relationList[0].dlgApiDefine.Equals("api testdrive")
-            //    switch (MessagesController.relationList[0].dlgApiDefine)
-            //    {
-            //        case "api testdrive":
-            //            context.Call(new TestDriveApi("시승"), this.ResumeAfterOptionDialog);
-            //            break;
+            //context.Wait(this.MessageReceivedAsync);
+            MessagesController.relationList = db.DefineTypeChk(MessagesController.luisId, MessagesController.luisIntent, MessagesController.luisEntities);
+            
+            if (MessagesController.relationList.Count > 0)
+            {
+                //답변이 시승 rest api 호출인 경우
+                if (MessagesController.relationList[0].dlgApiDefine.Equals("api testdrive"))
+                {
+                    context.Call(new TestDriveApi(MessagesController.queryStr), this.ResumeAfterOptionDialog);
+                }
+                //답변이 가격 rest api 호출인 경우
+                else if (MessagesController.relationList[0].dlgApiDefine.Equals("api quot"))
+                {
+                    context.Call(new PriceApi(MessagesController.luisIntent, MessagesController.luisEntities, MessagesController.queryStr), this.ResumeAfterOptionDialog);
+                }
+                //답변이 추천 rest api 호출인 경우
+                else if (MessagesController.relationList[0].dlgApiDefine.Equals("api recommend"))
+                {
+                    context.Call(new RecommendApiDialog(), this.ResumeAfterOptionDialog);
+                }
+                //답변이 일반 답변인 경우
+                else if (MessagesController.relationList[0].dlgApiDefine.Equals("D"))
+                {
+                    context.Call(new CommonDialog("", MessagesController.queryStr), this.ResumeAfterOptionDialog);
 
-            //        case "api quot":
-            //            context.Call(new PriceApi("견적", "견적","견적"), this.ResumeAfterOptionDialog);
-            //            break;
-            //    }
-            //}
-            //catch (TooManyAttemptsException ex)
-            //{
-            //    await context.PostAsync($"Ooops! Too many attemps :(. But don't worry, I'm handling that exception and you can try again!");
+                    DateTime endTime = DateTime.Now;
+                    Debug.WriteLine("프로그램 수행시간 : {0}/ms", ((endTime - MessagesController.startTime).Milliseconds));
+                    Debug.WriteLine("* activity.Type : " + activity.Type);
+                    Debug.WriteLine("* activity.Recipient.Id : " + activity.Recipient.Id);
+                    Debug.WriteLine("* activity.ServiceUrl : " + activity.ServiceUrl);
 
-            //    context.Wait(this.MessageReceivedAsync);
-            //}
+                    int dbResult = db.insertUserQuery(MessagesController.queryStr, MessagesController.luisIntent, MessagesController.luisEntities, "0", MessagesController.luisId, 'H', 0);
+                    Debug.WriteLine("INSERT QUERY RESULT : " + dbResult.ToString());
+
+                    if (db.insertHistory(activity.Conversation.Id, MessagesController.queryStr, MessagesController.relationList[0].dlgId.ToString(), activity.ChannelId, ((endTime - MessagesController.startTime).Milliseconds), 0) > 0)
+                    {
+                        Debug.WriteLine("HISTORY RESULT SUCCESS");
+                        //HistoryLog("HISTORY RESULT SUCCESS");
+                    }
+                    else
+                    {
+                        Debug.WriteLine("HISTORY RESULT SUCCESS");
+                        //HistoryLog("HISTORY RESULT FAIL");
+                    }
+                }
+            }
+            //relation 값이 없을 경우 -> 네이버 기사 검색
+            else
+            {
+                //인텐트 파악은 추천으로 했으나 relation 테이블에 등록이 안되어 있는 경우
+                if (MessagesController.luisIntent.Contains("recommend "))
+                {
+                    context.Call(new RecommendApiDialog(), this.ResumeAfterOptionDialog);
+                } else
+                {
+                    context.Call(new IntentNoneDialog("", "", "", ""), this.ResumeAfterOptionDialog);
+                }
+            }
         }
 
-
-        private async Task ResumeAfterOptionDialog(IDialogContext context, IAwaitable<object> result)
-        {
-            try
-            {
-                var message = await result;
-            }
-            catch (Exception ex)
-            {
-                await context.PostAsync($"Failed with message: {ex.Message}");
-            }
-            finally
-            {
-                //context.Wait(this.MessageReceivedAsync);
-                context.Done("");
-            }
-        }
+        private async Task ResumeAfterOptionDialog(IDialogContext context, IAwaitable<object> result) => context.Done<IMessageActivity>(null);
     }
 }

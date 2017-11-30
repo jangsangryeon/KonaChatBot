@@ -13,153 +13,182 @@
     [Serializable]
     public class RecommendApiDialog : IDialog<object>
     {
+        DbConnect db = new DbConnect();
+        CardImage cardImage = new CardImage();
+        List<CardAction> cardButtons = new List<CardAction>();
+        string use = "", important = "", age = "", gender = "";
+
         public async Task StartAsync(IDialogContext context)
         {
-            context.Wait(this.MessageReceivedAsync);
-        }
+            //string use = "", important = "", age = "", gender = "";
 
-        public virtual async Task MessageReceivedAsync(IDialogContext context, IAwaitable<IMessageActivity> result)
-        {
-            var message = await result;
-            string use="", important="", age="", gender="";
+            var message = context.Activity;            
 
-            DbConnect db = new DbConnect();
-
-            //String keywordGroup = db.SelectedRecommendConfirm(message.Text);
-            RecommendConfirm rc = db.SelectedRecommendConfirm(message.Text);
+            List<RecommendConfirm> rc = db.SelectedRecommendConfirm;
 
             var reply = context.MakeMessage();
-            string domainURL = "https://bottest.hyundai.com";
 
-            //테스트용
-            //if (message.Text.Equals("20~30대 여성"))
-            //{
-            //    message.Text = "여성";
-            //}
-
-            //message 분류에 맞게 context.ConversationData 에 SetValue
-            if (rc.KEYWORDGROUP != "")
+            foreach (RecommendConfirm temprc in rc)
             {
-                //2depth 기타와 3depth 기타 구분
-                if (rc.KEYWORD.Equals("기타"))
+                if (!temprc.KEYWORDGROUP.Equals(""))
                 {
-                    context.ConversationData.TryGetValue("Important", out important);
-                    if (!string.IsNullOrEmpty(important))
+                    
+                    if (temprc.KEYWORDGROUP.Equals(RecommendContextConstants.Use) && temprc.KEYWORD.Equals("기타 용도"))
                     {
-                        context.ConversationData.SetValue("Gender", "기타");
-                        context.ConversationData.SetValue("Age", "기타");
-                        context.ConversationData.TryGetValue("Gender", out gender);
-                        context.ConversationData.TryGetValue("Age", out age);
+                        //if (context.ConversationData.TryGetValue(RecommendContextConstants.Use, out use))
+                        //{
+                        //    if (context.ConversationData.TryGetValue(RecommendContextConstants.Important, out important))
+                        //    {
+                        //        temprc.KEYWORDGROUP = RecommendContextConstants.Gender;
+                        //    } else
+                        //    {
+                        //        temprc.KEYWORDGROUP = RecommendContextConstants.Important;
+                        //    }
+                        //}
 
+                        context.ConversationData.SetValue(temprc.KEYWORDGROUP, temprc.KEYWORD);
+                        break;
+                        
                     }
                     else
                     {
-                        context.ConversationData.SetValue(rc.KEYWORDGROUP, rc.KEYWORD);
+                        Debug.WriteLine("temprc.KEYWORDGROUP.Equals(RecommendContextConstants.Important) = " + temprc.KEYWORDGROUP.Equals(RecommendContextConstants.Important));
+                        if (temprc.KEYWORDGROUP.Equals(RecommendContextConstants.Important) && temprc.KEYWORD.Equals("기타"))
+                        {
+                            temprc.KEYWORDGROUP = RecommendContextConstants.Gender;
+                        }
+
+                        context.ConversationData.SetValue(temprc.KEYWORDGROUP, temprc.KEYWORD);
                     }                    
                 }
-                else
-                {
-                    context.ConversationData.SetValue(rc.KEYWORDGROUP, rc.KEYWORD);
-                }
             }
 
-            //다이얼로그 아이디 추출
-            int rcmdDlgId;
-            context.ConversationData.TryGetValue("Use", out use);
-            context.ConversationData.TryGetValue("Important", out important);
-            context.ConversationData.TryGetValue("Age", out age);
-            context.ConversationData.TryGetValue("Gender", out gender);
-            if (!string.IsNullOrEmpty(gender) || !string.IsNullOrEmpty(age))
-            //if(context.ConversationData.TryGetValue("Age", out age) || context.ConversationData.TryGetValue("Gender", out gender))
+            if (!context.ConversationData.TryGetValue(RecommendContextConstants.Use, out use))
             {
-                //마지막 다이얼로그 아이디 입력
-                rcmdDlgId = 4;
-            } else
-            {
-                rcmdDlgId = db.SelectedRecommendDlgId(rc.KEYWORD);
+                //await context.PostAsync($"use 요청");
+                reply.Attachments.Add(getRecommendDialog(1));
+                await context.PostAsync(reply);
             }
-            
+            else if (!context.ConversationData.TryGetValue(RecommendContextConstants.Important, out important))
+            {
+                //await context.PostAsync($"important 요청");
+                reply.Attachments.Add(getRecommendDialog(2));
+                await context.PostAsync(reply);
+            }
+            else if ((!context.ConversationData.TryGetValue(RecommendContextConstants.Age, out age)) && (!context.ConversationData.TryGetValue(RecommendContextConstants.Gender, out gender)))
+            {
+                //await context.PostAsync($"age gender 요청");
+                reply.Attachments.Add(getRecommendDialog(3));
+                await context.PostAsync(reply);
+            }
+            else
+            {
+                context.ConversationData.TryGetValue(RecommendContextConstants.Use, out use);
+                context.ConversationData.TryGetValue(RecommendContextConstants.Important, out important);
+                context.ConversationData.TryGetValue(RecommendContextConstants.Age, out age);
+                context.ConversationData.TryGetValue(RecommendContextConstants.Gender, out gender);
+                reply.Attachments.Add(getRecommendDialog(4));
+
+                //초기화
+                context.ConversationData.Clear();
+                await context.PostAsync(reply);
+            }
+            context.Done<IMessageActivity>(null);
+        }
+
+        private static Attachment GetHeroCard(string title, string subtitle, string text, CardImage cardImage, /*CardAction cardAction*/ List<CardAction> buttons)
+        {
+            var heroCard = new HeroCard
+            {
+                Title = title,
+                Subtitle = subtitle,
+                Text = text,
+                Images = new List<CardImage>() { cardImage },
+                Buttons = buttons,
+            };
+
+            return heroCard.ToAttachment();
+        }
+
+        private Attachment getRecommendDialog(int rcmdDlgId)
+        {
             //MEDIA 데이터 추출
+            Attachment returnAttachment = new Attachment();
+
             List<Recommend_DLG_MEDIA> SelectRecommend_DLG_MEDIA = db.SelectRecommend_DLG_MEDIA(rcmdDlgId);
-
-            CardImage cardImage = new CardImage();
-            List<CardAction> cardButtons = new List<CardAction>();
-
-            for (int i = 0; i < SelectRecommend_DLG_MEDIA.Count; i++)
+            if (rcmdDlgId != 4)
             {
-                //CardImage 입력
-                cardImage = new CardImage()
+                for (int i = 0; i < SelectRecommend_DLG_MEDIA.Count; i++)
                 {
-                    Url = SelectRecommend_DLG_MEDIA[i].media_url
-                };                
-
-                if (SelectRecommend_DLG_MEDIA[i].btn_1_context.Length != 0)
-                {
-                    CardAction plButton = new CardAction()
+                    //CardImage 입력
+                    cardImage = new CardImage()
                     {
-                        Value = SelectRecommend_DLG_MEDIA[i].btn_1_context,
-                        Type = SelectRecommend_DLG_MEDIA[i].btn_1_type,
-                        Title = SelectRecommend_DLG_MEDIA[i].btn_1_title
+                        Url = SelectRecommend_DLG_MEDIA[i].media_url
                     };
-                    cardButtons.Add(plButton);
-                }
 
-                if (SelectRecommend_DLG_MEDIA[i].btn_2_context.Length != 0)
-                {
-                    CardAction plButton = new CardAction()
+                    if (SelectRecommend_DLG_MEDIA[i].btn_1_context.Length != 0)
                     {
-                        Value = SelectRecommend_DLG_MEDIA[i].btn_2_context,
-                        Type = SelectRecommend_DLG_MEDIA[i].btn_2_type,
-                        Title = SelectRecommend_DLG_MEDIA[i].btn_2_title
-                    };
-                    cardButtons.Add(plButton);
-                }
+                        CardAction plButton = new CardAction()
+                        {
+                            Value = SelectRecommend_DLG_MEDIA[i].btn_1_context,
+                            Type = SelectRecommend_DLG_MEDIA[i].btn_1_type,
+                            Title = SelectRecommend_DLG_MEDIA[i].btn_1_title
+                        };
+                        cardButtons.Add(plButton);
+                    }
 
-                if (SelectRecommend_DLG_MEDIA[i].btn_3_context.Length != 0)
-                {
-                    CardAction plButton = new CardAction()
+                    if (SelectRecommend_DLG_MEDIA[i].btn_2_context.Length != 0)
                     {
-                        Value = SelectRecommend_DLG_MEDIA[i].btn_3_context,
-                        Type = SelectRecommend_DLG_MEDIA[i].btn_3_type,
-                        Title = SelectRecommend_DLG_MEDIA[i].btn_3_title
-                    };
-                    cardButtons.Add(plButton);
-                }
+                        CardAction plButton = new CardAction()
+                        {
+                            Value = SelectRecommend_DLG_MEDIA[i].btn_2_context,
+                            Type = SelectRecommend_DLG_MEDIA[i].btn_2_type,
+                            Title = SelectRecommend_DLG_MEDIA[i].btn_2_title
+                        };
+                        cardButtons.Add(plButton);
+                    }
 
-                if (SelectRecommend_DLG_MEDIA[i].btn_4_context.Length != 0)
-                {
-                    CardAction plButton = new CardAction()
+                    if (SelectRecommend_DLG_MEDIA[i].btn_3_context.Length != 0)
                     {
-                        Value = SelectRecommend_DLG_MEDIA[i].btn_4_context,
-                        Type = SelectRecommend_DLG_MEDIA[i].btn_4_type,
-                        Title = SelectRecommend_DLG_MEDIA[i].btn_4_title
-                    };
-                    cardButtons.Add(plButton);
-                }
+                        CardAction plButton = new CardAction()
+                        {
+                            Value = SelectRecommend_DLG_MEDIA[i].btn_3_context,
+                            Type = SelectRecommend_DLG_MEDIA[i].btn_3_type,
+                            Title = SelectRecommend_DLG_MEDIA[i].btn_3_title
+                        };
+                        cardButtons.Add(plButton);
+                    }
 
-                if (SelectRecommend_DLG_MEDIA[i].btn_5_context.Length != 0)
-                {
-                    CardAction plButton = new CardAction()
+                    if (SelectRecommend_DLG_MEDIA[i].btn_4_context.Length != 0)
                     {
-                        Value = SelectRecommend_DLG_MEDIA[i].btn_5_context,
-                        Type = SelectRecommend_DLG_MEDIA[i].btn_5_type,
-                        Title = SelectRecommend_DLG_MEDIA[i].btn_5_title
-                    };
-                    cardButtons.Add(plButton);
+                        CardAction plButton = new CardAction()
+                        {
+                            Value = SelectRecommend_DLG_MEDIA[i].btn_4_context,
+                            Type = SelectRecommend_DLG_MEDIA[i].btn_4_type,
+                            Title = SelectRecommend_DLG_MEDIA[i].btn_4_title
+                        };
+                        cardButtons.Add(plButton);
+                    }
+
+                    if (SelectRecommend_DLG_MEDIA[i].btn_5_context.Length != 0)
+                    {
+                        CardAction plButton = new CardAction()
+                        {
+                            Value = SelectRecommend_DLG_MEDIA[i].btn_5_context,
+                            Type = SelectRecommend_DLG_MEDIA[i].btn_5_type,
+                            Title = SelectRecommend_DLG_MEDIA[i].btn_5_title
+                        };
+                        cardButtons.Add(plButton);
+                    }
+
+                    //message.Attachments.Add(GetHeroCard(SelectRecommend_DLG_MEDIA[i].card_title, "", SelectRecommend_DLG_MEDIA[i].card_text, cardImage, cardButtons));
+                    returnAttachment = GetHeroCard(SelectRecommend_DLG_MEDIA[i].card_title, "", SelectRecommend_DLG_MEDIA[i].card_text, cardImage, cardButtons);
                 }
-
-                reply.Attachments.Add(GetHeroCard(SelectRecommend_DLG_MEDIA[i].card_title, "", SelectRecommend_DLG_MEDIA[i].card_text, cardImage, cardButtons));
-            }
-
-            //추천 다이얼로그 출력
-            if (!string.IsNullOrEmpty(use) && !string.IsNullOrEmpty(important) && (!string.IsNullOrEmpty(age)) || (!string.IsNullOrEmpty(gender)))
+            }else
             {
-                Debug.WriteLine("use, important, age, gender = " + use + "|||" + important + "|||" + age + "|||" + gender);
-                //이전 reply 초기화
-                reply.Attachments.Clear();
-                cardButtons.Clear();
+                string domainURL = "https://bottest.hyundai.com";
 
-                List<RecommendList> RecommendList = db.SelectedRecommendList(use, important, gender, "");
+                List<RecommendList> RecommendList = db.SelectedRecommendList(use, important, gender, age);
                 RecommendList recommend = new RecommendList();
 
                 for (var i = 0; i < RecommendList.Count; i++)
@@ -246,49 +275,12 @@
                             Title = SelectRecommend_DLG_MEDIA[0].btn_2_title
                         };
                         cardButtons.Add(plButton);
-                    }
-               
-                    reply.Attachments.Add(GetHeroCard("trim", subtitle, "", cardImage, cardButtons));
-                    context.ConversationData.SetValue("Use", "");
-                    context.ConversationData.SetValue("Important", "");
-                    context.ConversationData.SetValue("Gender", "");
-                    context.ConversationData.SetValue("Age", "");
-                    context.ConversationData.TryGetValue("Use", out use);
-                    context.ConversationData.TryGetValue("Important", out important);
-                    context.ConversationData.TryGetValue("Gender", out gender);
-                    context.ConversationData.TryGetValue("Age", out age);
+                    }                    
+                    returnAttachment = GetHeroCard("trim", subtitle, "", cardImage, cardButtons);
                 }
-                
             }
-            await context.PostAsync(reply);
-            context.Wait(this.MessageReceivedAsync);
+            return returnAttachment;
         }
 
-        private async Task ResumeAfterPrompt(IDialogContext context, IAwaitable<string> result)
-        {
-            try
-            {
-
-            }
-            catch (TooManyAttemptsException)
-            {
-            }
-
-            context.Wait(this.MessageReceivedAsync);
-        }
-
-        private static Attachment GetHeroCard(string title, string subtitle, string text, CardImage cardImage, /*CardAction cardAction*/ List<CardAction> buttons)
-        {
-            var heroCard = new HeroCard
-            {
-                Title = title,
-                Subtitle = subtitle,
-                Text = text,
-                Images = new List<CardImage>() { cardImage },
-                Buttons = buttons,
-            };
-
-            return heroCard.ToAttachment();
-        }
     }
 }

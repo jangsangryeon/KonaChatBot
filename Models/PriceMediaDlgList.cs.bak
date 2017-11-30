@@ -32,8 +32,5 @@ namespace KonaChatBot.Models
         public string cardValue { get; set; }
         public string dlgDesc { get; set; }
 
-        public string groupNm { get; set; }
-        public string entityDetail { get; set; }
-
     }
 }

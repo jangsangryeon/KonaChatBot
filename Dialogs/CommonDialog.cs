@@ -36,13 +36,7 @@ namespace KonaChatBot.Dialogs
 
         public async Task StartAsync(IDialogContext context)
         {
-            context.Wait(this.MessageReceivedAsync);
-        }
-
-
-        private async Task MessageReceivedAsync(IDialogContext context, IAwaitable<IMessageActivity> result)
-        {
-            var activity = (Activity)await result;
+            var activity = context.Activity;
             channel = activity.ChannelId;
             orgMent = MessagesController.queryStr;
             String beforeMent = "";
@@ -61,7 +55,7 @@ namespace KonaChatBot.Dialogs
                     fbLeftCardCnt++;
                 }
             }
-            
+
 
             var reply = context.MakeMessage();
             reply.AttachmentLayout = AttachmentLayoutTypes.Carousel;
@@ -82,20 +76,24 @@ namespace KonaChatBot.Dialogs
                             if (Int32.Parse(tempcard.card_order_no) > (MAXFACEBOOKCARDS * facebookpagecount) && Int32.Parse(tempcard.card_order_no) <= (MAXFACEBOOKCARDS * (facebookpagecount + 1)))
                             {
                                 tempAttachment = getAttachmentFromDialog(tempcard);
-                            } else if (Int32.Parse(tempcard.card_order_no) > (MAXFACEBOOKCARDS * (facebookpagecount + 1)))
+                            }
+                            else if (Int32.Parse(tempcard.card_order_no) > (MAXFACEBOOKCARDS * (facebookpagecount + 1)))
                             {
                                 fbLeftCardCnt++;
                             }
-                        } else if (channel.Equals("facebook"))
+                        }
+                        else if (channel.Equals("facebook"))
                         {
                             if (Int32.Parse(tempcard.card_order_no) <= MAXFACEBOOKCARDS)
                             {
                                 tempAttachment = getAttachmentFromDialog(tempcard);
-                            } else
+                            }
+                            else
                             {
                                 fbLeftCardCnt++;
                             }
-                        } else
+                        }
+                        else
                         {
                             tempAttachment = getAttachmentFromDialog(tempcard);
                         }
@@ -129,7 +127,13 @@ namespace KonaChatBot.Dialogs
             //context.Done(true);
             //context.Wait(this.MessageReceivedAsync);
             //context.Done<object>(new object());
-            context.Done("");
+            context.Done<IMessageActivity>(null);
+        }
+
+
+        private async Task MessageReceivedAsync(IDialogContext context, IAwaitable<IMessageActivity> result)
+        {
+            
 
 
         }

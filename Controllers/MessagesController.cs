@@ -59,7 +59,9 @@ namespace KonaChatBot
         public static string luisIntent = "";
         public static string luisEntities = "";
         public static string queryStr = "";
+        public static DateTime startTime;
 
+        public static CacheList cacheList = new CacheList();
 
         public async Task<HttpResponseMessage> Post([FromBody]Activity activity)
         {
@@ -72,11 +74,16 @@ namespace KonaChatBot
 
 			if (activity.Type == ActivityTypes.ConversationUpdate && activity.MembersAdded.Any(m => m.Id == activity.Recipient.Id))
             {
-                DateTime startTime = DateTime.Now;
+                startTime = DateTime.Now;
                 
                 //파라메터 호출
-                Array.Clear(LUIS_NM, 0, 10);
-                if(LUIS_APP_ID.Count(s => s != null) > 0)
+                
+                if(LUIS_NM.Count(s => s != null) > 0)
+                {
+                    string[] LUIS_NM = new string[10];
+                }
+
+                if (LUIS_APP_ID.Count(s => s != null) > 0)
                 {
                     string[] LUIS_APP_ID = new string[10];
                 }
@@ -166,7 +173,7 @@ namespace KonaChatBot
                 ConnectorClient connector = new ConnectorClient(new Uri(activity.ServiceUrl));
 
                 //대화 시작 시간
-                DateTime startTime = DateTime.Now;
+                startTime = DateTime.Now;
                 long unixTime = ((DateTimeOffset)startTime).ToUnixTimeSeconds();
 
                 //await Conversation.SendAsync(activity, () => new TestDriveApi(orgMent));
@@ -216,7 +223,7 @@ namespace KonaChatBot
                 //인텐트 엔티티 검출
                 //캐시 체크
                 cashOrgMent = Regex.Replace(orgMent, @"[^a-zA-Z0-9ㄱ-힣]", "", RegexOptions.Singleline);
-                CacheList cacheList = db.CacheChk(cashOrgMent.Replace(" ",""));                     // 캐시 체크
+                cacheList = db.CacheChk(cashOrgMent.Replace(" ",""));                     // 캐시 체크
                 
 
                 //캐시에 없을 경우
@@ -283,73 +290,8 @@ namespace KonaChatBot
                 luisEntities = cacheList.luisEntities;
 
                 queryStr = orgMent;
-        await Conversation.SendAsync(activity, () => new RootDialog(cacheList.luisId, cacheList.luisIntent, cacheList.luisEntities));
-
-                ////TBL_DLG_RELATION_LUIS 테이블에서 해당 다이얼로그 리스트 호출
-                //relationList = db.DefineTypeChk(cacheList.luisId, cacheList.luisIntent, cacheList.luisEntities);
-
-                ////COMMON DIALG와 API 호출 분기
-                ////relation 값이 있을 경우
-
-                //if (relationList.Count > 0)
-                //{
-                //    //답변이 시승 rest api 호출인 경우
-                //    if (relationList[0].dlgApiDefine.Equals("api testdrive"))
-                //    {
-                //        //await Conversation.SendAsync(activity, () => new TestDriveApi(cacheList.luisIntent, cacheList.luisEntities, orgMent));
-                //        await Conversation.SendAsync(activity, () => new TestDriveApi(orgMent));
-
-                //    }
-                //    //답변이 가격 rest api 호출인 경우
-                //    else if (relationList[0].dlgApiDefine.Equals("api quot"))
-                //    {
-                //        await Conversation.SendAsync(activity, () => new PriceApi(cacheList.luisIntent, cacheList.luisEntities, orgMent));
-                //    }
-                //    //답변이 추천 rest api 호출인 경우
-                //    else if (relationList[0].dlgApiDefine.Equals("api recommend"))
-                //    {
-                //        if (activity.ChannelId != "facebook")
-                //        {
-                //            //await Conversation.SendAsync(activity, () => new TestDriveApi(cacheList.luisIntent, cacheList.luisEntities, orgMent));
-                //            await Conversation.SendAsync(activity, () => new RecommendApiDialog());
-                //        } else
-                //        {
-                //            //facebook일 경우 처리
-                //        }
-                //    }
-                //    //답변이 일반 답변인 경우
-                //    else if (relationList[0].dlgApiDefine.Equals("D"))
-                //    {
-                //        await Conversation.SendAsync(activity, () => new CommonDialog( activity.ChannelId, orgMent));                        
-
-                //        DateTime endTime = DateTime.Now;
-                //        Debug.WriteLine("프로그램 수행시간 : {0}/ms", ((endTime - startTime).Milliseconds));
-                //        Debug.WriteLine("* activity.Type : " + activity.Type);
-                //        Debug.WriteLine("* activity.Recipient.Id : " + activity.Recipient.Id);
-                //        Debug.WriteLine("* activity.ServiceUrl : " + activity.ServiceUrl);
-
-                //        int dbResult = db.insertUserQuery(cashOrgMent, cacheList.luisIntent, cacheList.luisEntities, "0", cacheList.luisId, 'H',0);
-                //        Debug.WriteLine("INSERT QUERY RESULT : " + dbResult.ToString());
-
-                //        if (db.insertHistory(activity.Conversation.Id, activity.Text, relationList[0].dlgId.ToString(), activity.ChannelId, ((endTime - startTime).Milliseconds), 0) > 0)
-                //        {
-                //            Debug.WriteLine("HISTORY RESULT SUCCESS");
-                //            HistoryLog("HISTORY RESULT SUCCESS");
-                //        }
-                //        else
-                //        {
-                //            Debug.WriteLine("HISTORY RESULT SUCCESS");
-                //            HistoryLog("HISTORY RESULT FAIL");
-                //        }
-                //        //relationList.Clear();
-                //    }
-                //}
-                ////relation 값이 없을 경우 -> 네이버 기사 검색
-                //else
-                //{
-                //    //네이버 검색
-                //    await Conversation.SendAsync(activity, () => new IntentNoneDialog("", "", startTime, "", ""));
-                //}
+                //다이얼로그 호출
+                await Conversation.SendAsync(activity, () => new RootDialog(cacheList.luisId, cacheList.luisIntent, cacheList.luisEntities));
             }
             else
             {

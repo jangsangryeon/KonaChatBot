@@ -945,40 +945,44 @@ namespace KonaChatBot.DB
         }
 
 
-        public RecommendConfirm SelectedRecommendConfirm(string kr_query)
+        public List<RecommendConfirm> SelectedRecommendConfirm
         {
-            SqlDataReader rdr = null;
-
-            RecommendConfirm rc = new RecommendConfirm();
-
-            using (SqlConnection conn = new SqlConnection(connStr))
+            get
             {
-                conn.Open();
-                SqlCommand cmd = new SqlCommand();
-                cmd.Connection = conn;
-
-                cmd.CommandText += "SELECT  TOP 1 KEYWORD, KEYWORDGROUP ";
-                cmd.CommandText += "FROM    TBL_RECOMMEND_KEYWORD ";
-                cmd.CommandText += "WHERE   CHARINDEX(KEYWORD,@kr_query) > 0";
-
-                cmd.Parameters.AddWithValue("@kr_query", kr_query);
-
-                rdr = cmd.ExecuteReader(CommandBehavior.CloseConnection);                
-                
-                try
+                SqlDataReader rdr = null;
+                List<RecommendConfirm> rc = new List<RecommendConfirm>();
+                using (SqlConnection conn = new SqlConnection(connStr))
                 {
-                    while (rdr.Read())
+
+                    conn.Open();
+                    SqlCommand cmd = new SqlCommand();
+                    cmd.Connection = conn;
+
+                    cmd.CommandText += "SELECT  KEYWORD, KEYWORDGROUP ";
+                    cmd.CommandText += "FROM    TBL_RECOMMEND_KEYWORD ";
+                    cmd.CommandText += "WHERE   CHARINDEX(KEYWORD,@kr_query) > 0";
+
+                    cmd.Parameters.AddWithValue("@kr_query", MessagesController.queryStr);
+
+                    rdr = cmd.ExecuteReader(CommandBehavior.CloseConnection);
+
+                    try
                     {
-                        rc.KEYWORD = rdr["KEYWORD"] as string;
-                        rc.KEYWORDGROUP = rdr["KEYWORDGROUP"] as string;
+                        while (rdr.Read())
+                        {
+                            RecommendConfirm temprc = new RecommendConfirm();
+                            temprc.KEYWORD = rdr["KEYWORD"] as string;
+                            temprc.KEYWORDGROUP = rdr["KEYWORDGROUP"] as string;
+                            rc.Add(temprc);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.WriteLine(e.Message);
                     }
                 }
-                catch (Exception e)
-                {
-                    Debug.WriteLine(e.Message);
-                }
+                return rc;
             }
-            return rc;
         }
 
         public int SelectedRecommendDlgId(string recommendValue)
@@ -1169,8 +1173,21 @@ namespace KonaChatBot.DB
 
                 cmd.Parameters.AddWithValue("@usage", usage);
                 cmd.Parameters.AddWithValue("@importance", importance);
-                cmd.Parameters.AddWithValue("@gender", gender);
-                cmd.Parameters.AddWithValue("@age", age);
+                if (gender == null)
+                {
+                    cmd.Parameters.AddWithValue("@gender", "기타");
+                }else
+                {
+                    cmd.Parameters.AddWithValue("@gender", gender);
+                }
+                if (age == null)
+                {
+                    cmd.Parameters.AddWithValue("@ag", "기타");
+                }
+                else
+                {
+                    cmd.Parameters.AddWithValue("@ag", age);
+                }
 
                 rdr = cmd.ExecuteReader(CommandBehavior.CloseConnection);
                 while (rdr.Read())
@@ -1546,6 +1563,8 @@ namespace KonaChatBot.DB
                     mediaDlg.btn4Context = btn4Context;
                     mediaDlg.cardDivision = cardDivision;
                     mediaDlg.cardValue = cardValue;
+                    mediaDlg.groupNm = group;
+                    mediaDlg.entityDetail = tempStr;
 
                     priceMediaDlgList.Add(mediaDlg);
                 }

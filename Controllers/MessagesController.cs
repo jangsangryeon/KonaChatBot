@@ -221,6 +221,7 @@ namespace KonaChatBot
                     return response;
                 }
 
+                queryStr = orgMent;
                 //인텐트 엔티티 검출
                 //캐시 체크
                 cashOrgMent = Regex.Replace(orgMent, @"[^a-zA-Z0-9ㄱ-힣]", "", RegexOptions.Singleline);
@@ -290,7 +291,7 @@ namespace KonaChatBot
                 luisIntent = cacheList.luisIntent;
                 luisEntities = cacheList.luisEntities;
 
-                queryStr = orgMent;
+                
                 //다이얼로그 호출
                 await Conversation.SendAsync(activity, () => new RootDialog(cacheList.luisId, cacheList.luisIntent, cacheList.luisEntities));
             }

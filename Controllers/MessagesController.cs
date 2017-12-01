@@ -226,7 +226,7 @@ namespace KonaChatBot
                 //캐시 체크
                 cashOrgMent = Regex.Replace(orgMent, @"[^a-zA-Z0-9ㄱ-힣]", "", RegexOptions.Singleline);
                 cacheList = db.CacheChk(cashOrgMent.Replace(" ",""));                     // 캐시 체크
-
+                
 
                 //캐시에 없을 경우
                 if (cacheList.luisIntent == null || cacheList.luisEntities == null)

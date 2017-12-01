@@ -15,6 +15,7 @@ namespace KonaChatBot.DB
     {
         //string connStr = "Data Source=taihoinst.database.windows.net;Initial Catalog=taihoLab;User ID=taihoinst;Password=taiho123@;";
         string connStr = "Data Source=taihoinst.database.windows.net;Initial Catalog=taihoLab;User ID=taihoinst;Password=taiho123@;";
+        //string connStr = "Data Source=10.6.222.21,1433;Initial Catalog=konadb;User ID=konadb;Password=Didwoehd20-9!;";
         StringBuilder sb = new StringBuilder();
         public readonly string TEXTDLG = "2";
         public readonly string CARDDLG = "3";
@@ -1385,7 +1386,7 @@ namespace KonaChatBot.DB
 
                 for (int i = 1; i < entities.Length; i++)
                 {
-                    cmd.CommandText += "OR KEYWORD = '" + entities[i].ToString() + "'";
+                    cmd.CommandText += "OR KEYWORD = '" + entities[i].ToString().Replace("tuix","튜익스").Replace("플럭스", "튜익스") + "'";
                 }
 
                 Debug.WriteLine("price keyword group query : " + cmd.CommandText);

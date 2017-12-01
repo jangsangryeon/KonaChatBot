@@ -95,7 +95,13 @@ namespace KonaChatBot.Dialogs
                 {
 
                     context.Call(new TestDriveApi(MessagesController.queryStr), this.ResumeAfterOptionDialog);
-                } else
+                }
+                else if (MessagesController.luisIntent.Contains("quot"))
+                {
+                    //context.Call(new RecommendApiDialog(), this.ResumeAfterOptionDialog);
+                    context.Call(new PriceApi(MessagesController.luisIntent, MessagesController.luisEntities, MessagesController.queryStr), this.ResumeAfterOptionDialog);
+                }
+                else
                 {
                     context.Call(new IntentNoneDialog("", "", "", ""), this.ResumeAfterOptionDialog);
                 }

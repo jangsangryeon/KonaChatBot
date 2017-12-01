@@ -559,14 +559,14 @@ namespace KonaChatBot.Dialogs
                     {
                         cardImage = new CardImage()
                         {
-                            Url = priceMediaDlgList[i].mediaUrl.Replace("CALL(IMAGE_URL)", imgNmTranslateInfo.data.translations[0].translatedText.Replace(" ", ""))
+                            Url = priceMediaDlgList[i].mediaUrl.Replace("CALL(IMAGE_URL)", imgNmTranslateInfo.data.translations[0].translatedText.Replace(" ", "").Replace("AcidYellow", "Acid Yellow"))
                         };
                     }
                     else
                     {
                         cardImage = new CardImage()
                         {
-                            Url = priceMediaDlgList[i].mediaUrl.Replace("CALL(IMAGE_URL)", imgNmTranslateInfo.data.translations[0].translatedText.Replace(" ", "").Replace("DarkKnight", "DarkNight"))
+                            Url = priceMediaDlgList[i].mediaUrl.Replace("CALL(IMAGE_URL)", imgNmTranslateInfo.data.translations[0].translatedText.Replace(" ", "").Replace("DarkKnight", "DarkNight").Replace("AcidYellow", "Acid Yellow"))
                         };
                     }
 
@@ -624,7 +624,7 @@ namespace KonaChatBot.Dialogs
 
                     if (priceMediaDlgList[i].cardValue.Length != 0)
                     {
-                        cardVal = priceMediaDlgList[i].cardValue.Replace("CALL(IMAGE_URL)", imgNmTranslateInfo.data.translations[0].translatedText.Replace(" ", "").Replace("DarkKnight", "DarkNight"));
+                        cardVal = priceMediaDlgList[i].cardValue.Replace("CALL(IMAGE_URL)", imgNmTranslateInfo.data.translations[0].translatedText.Replace(" ", " ").Replace("DarkKnight", "DarkNight")).ToLower();
                     }
 
 

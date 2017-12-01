@@ -61,6 +61,7 @@ namespace KonaChatBot
         public static string queryStr = "";
         public static DateTime startTime;
 
+        public static CacheList cacheList = new CacheList();
 
         public async Task<HttpResponseMessage> Post([FromBody]Activity activity)
         {
@@ -74,17 +75,18 @@ namespace KonaChatBot
 			if (activity.Type == ActivityTypes.ConversationUpdate && activity.MembersAdded.Any(m => m.Id == activity.Recipient.Id))
             {
                 startTime = DateTime.Now;
-                
+
                 //파라메터 호출
-                
-                if(LUIS_NM.Count(s => s != null) > 0)
+                if (LUIS_NM.Count(s => s != null) > 0)
                 {
-                    string[] LUIS_NM = new string[10];
+                    //string[] LUIS_NM = new string[10];
+                    Array.Clear(LUIS_NM, 0, LUIS_NM.Length);
                 }
 
                 if (LUIS_APP_ID.Count(s => s != null) > 0)
                 {
-                    string[] LUIS_APP_ID = new string[10];
+                    //string[] LUIS_APP_ID = new string[10];
+                    Array.Clear(LUIS_APP_ID, 0, LUIS_APP_ID.Length);
                 }
                 //Array.Clear(LUIS_APP_ID, 0, 10);
                 List<ConfList> confList = db.SelectConfig();
@@ -219,11 +221,12 @@ namespace KonaChatBot
                     return response;
                 }
 
+                queryStr = orgMent;
                 //인텐트 엔티티 검출
                 //캐시 체크
                 cashOrgMent = Regex.Replace(orgMent, @"[^a-zA-Z0-9ㄱ-힣]", "", RegexOptions.Singleline);
-                CacheList cacheList = db.CacheChk(cashOrgMent.Replace(" ",""));                     // 캐시 체크
-                
+                cacheList = db.CacheChk(cashOrgMent.Replace(" ",""));                     // 캐시 체크
+
 
                 //캐시에 없을 경우
                 if (cacheList.luisIntent == null || cacheList.luisEntities == null)
@@ -239,26 +242,29 @@ namespace KonaChatBot
                     //}
 
                     //루이스 체크
-                    cacheList.luisId = GetMultiLUIS(orgMent);
+                    //cacheList.luisId = GetMultiLUIS(orgMent);
 
-                    float luisScore = (float)Luis["intents"][0]["score"];
-                    int luisEntityCount = (int)Luis["entities"].Count();
-
-                    string luisEntities = "";
-                    string luisType = "";
-                    if (luisScore > Convert.ToDouble(LUIS_SCORE_LIMIT) && luisEntityCount > 0)
+                    if (Luis.Count > 0)
                     {
-                        for (int i = 0; i < luisEntityCount; i++)
+                        float luisScore = (float)Luis["intents"][0]["score"];
+                        int luisEntityCount = (int)Luis["entities"].Count();
+
+                        string luisEntities = "";
+                        string luisType = "";
+                        if (luisScore > Convert.ToDouble(LUIS_SCORE_LIMIT) && luisEntityCount > 0)
                         {
-                            //luisEntities = luisEntities + Luis["entities"][i]["entity"] + ",";
-                            luisType = (string)Luis["entities"][i]["type"];
-                            luisType = Regex.Split(luisType, "::")[1];
-                            luisEntities = luisEntities + luisType + ",";
+                            for (int i = 0; i < luisEntityCount; i++)
+                            {
+                                //luisEntities = luisEntities + Luis["entities"][i]["entity"] + ",";
+                                luisType = (string)Luis["entities"][i]["type"];
+                                luisType = Regex.Split(luisType, "::")[1];
+                                luisEntities = luisEntities + luisType + ",";
+                            }
+                            Debug.WriteLine("luisEntities - 1 : " + luisEntities);
                         }
-                        Debug.WriteLine("luisEntities - 1 : " + luisEntities);
                     }
 
-                    if(luisEntities.Length > 0)
+                    if (luisEntities.Length > 0)
                     {
                         luisEntities = luisEntities.Substring(0, luisEntities.LastIndexOf(","));
                         luisEntities = Regex.Replace(luisEntities, " ", "");
@@ -288,7 +294,7 @@ namespace KonaChatBot
                 luisIntent = cacheList.luisIntent;
                 luisEntities = cacheList.luisEntities;
 
-                queryStr = orgMent;
+                
                 //다이얼로그 호출
                 await Conversation.SendAsync(activity, () => new RootDialog(cacheList.luisId, cacheList.luisIntent, cacheList.luisEntities));
             }
@@ -556,6 +562,7 @@ namespace KonaChatBot
 
             int MAX = LUIS_APP_ID.Count(s => s != null);
             Array.Resize(ref LUIS_APP_ID, MAX);
+            Array.Resize(ref LUIS_NM, MAX);
 
             String[] returnLuisName = new string[MAX];
             JObject[] Luis_before = new JObject[MAX];
@@ -629,17 +636,28 @@ namespace KonaChatBot
                 {
                     Debug.WriteLine("i = " + Luis_before[i]["topScoringIntent"]["score"]);
                     Debug.WriteLine("ij = " + returnLuisName[i]);
-                    if(i == 0)
+
+                    //entities 가 없을때 score 0으로 설정
+                    if ((int)Luis_before[i]["entities"].Count() < 1)
+                    {
+                        Luis_before[i]["topScoringIntent"]["score"] = 0;
+                    }
+                    
+                    if (i == 0)
                     {
                         Luis = Luis_before[0];
                         LuisName = returnLuisName[0];
                     } else
                     {
+
                         if (((float)Luis["topScoringIntent"]["score"] < (float)Luis_before[i]["topScoringIntent"]["score"]) && Luis_before[i]["topScoringIntent"]["intent"].ToString() != "None")
                         {
-                            Luis = Luis_before[i];
-                            LuisName = returnLuisName[i];  
-                        }
+                            if (Luis_before[i]["entities"].Count() > 0)
+                            {
+                                Luis = Luis_before[i];
+                                LuisName = returnLuisName[i];
+                            }
+                        }                      
                     }
 
                 }

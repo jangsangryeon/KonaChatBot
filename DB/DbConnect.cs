@@ -1043,7 +1043,7 @@ namespace KonaChatBot.DB
                     //cmd.CommandText += "FROM    TBL_COMMON_ENTITY_DEFINE ";
                     //cmd.CommandText += "WHERE   CHARINDEX(ENTITY_VALUE,@kr_query) > 0";
 
-                    cmd.CommandText += "SELECT RESULT AS ENTITIES FROM [dbo].[FN_ENTITY_ORDERBY](@kr_query) ";
+                    cmd.CommandText += "SELECT RESULT AS ENTITIES FROM FN_ENTITY_ORDERBY_ADD(@kr_query) ";
 
                     cmd.Parameters.AddWithValue("@kr_query", query);
 

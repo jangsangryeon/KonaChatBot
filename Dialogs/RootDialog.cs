@@ -42,8 +42,25 @@ namespace KonaChatBot.Dialogs
             DbConnect db = new DbConnect();
 
             //context.Wait(this.MessageReceivedAsync);
-            MessagesController.relationList = db.DefineTypeChk(MessagesController.luisId, MessagesController.luisIntent, MessagesController.luisEntities);
-            
+            //MessagesController.relationList = db.DefineTypeChk(MessagesController.luisId, MessagesController.luisIntent, MessagesController.luisEntities);
+            String fullentity = db.SearchCommonEntities;
+
+            Debug.WriteLine("fullentity = " + fullentity + "===="+ fullentity.Length);
+            Debug.WriteLine("MessagesController.luisEntities = " + MessagesController.luisEntities + "====" + MessagesController.luisEntities.Length);
+
+            string compareLuisEntity = "";
+
+            //entity 길이 비교
+            if (fullentity.Length > MessagesController.luisEntities.Length)
+            {
+                compareLuisEntity = fullentity;
+            } else
+            {
+                compareLuisEntity = MessagesController.luisEntities;
+            }
+
+            //DefineTypeChkSpare에서는 인텐트나 루이스아이디조건 없이 엔티티만 일치하면 다이얼로그 리턴
+            MessagesController.relationList = db.DefineTypeChkSpare(compareLuisEntity);
             if (MessagesController.relationList.Count > 0)
             {
                 //답변이 시승 rest api 호출인 경우
@@ -74,17 +91,11 @@ namespace KonaChatBot.Dialogs
                 if (MessagesController.luisIntent.Contains("recommend "))
                 {
                     context.Call(new RecommendApiDialog(), this.ResumeAfterOptionDialog);
-                }
-                else if (MessagesController.luisIntent.Contains("TESTDRIVE") || MessagesController.luisIntent.Contains("BRANCH"))
+                }else if (MessagesController.luisIntent.Contains("TESTDRIVE") || MessagesController.luisIntent.Contains("BRANCH"))
                 {
+
                     context.Call(new TestDriveApi(MessagesController.queryStr), this.ResumeAfterOptionDialog);
-                }
-                else if (MessagesController.luisIntent.Contains("quot"))
-                {
-                    //context.Call(new RecommendApiDialog(), this.ResumeAfterOptionDialog);
-                    context.Call(new PriceApi(MessagesController.luisIntent, MessagesController.luisEntities, MessagesController.queryStr), this.ResumeAfterOptionDialog);
-                }
-                else
+                } else
                 {
                     context.Call(new IntentNoneDialog("", "", "", ""), this.ResumeAfterOptionDialog);
                 }

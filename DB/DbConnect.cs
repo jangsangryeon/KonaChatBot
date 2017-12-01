@@ -6,6 +6,7 @@ using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Web;
 
 namespace KonaChatBot.DB
@@ -565,6 +566,42 @@ namespace KonaChatBot.DB
             }
             return result;
         }
+
+        public List<RelationList> DefineTypeChkSpare(string entity)
+        {
+            SqlDataReader rdr = null;
+            List<RelationList> result = new List<RelationList>();
+            using (SqlConnection conn = new SqlConnection(connStr))
+            {
+                conn.Open();
+                SqlCommand cmd = new SqlCommand();
+                cmd.Connection = conn;
+                cmd.CommandText += "SELECT  LUIS_ID, LUIS_INTENT, LUIS_ENTITIES, ISNULL(DLG_ID,0) AS DLG_ID, DLG_API_DEFINE, API_ID ";
+                cmd.CommandText += "  FROM  TBL_DLG_RELATION_LUIS                                                    ";
+                cmd.CommandText += " WHERE  LUIS_ENTITIES = @entities                                                ";
+
+                Debug.WriteLine("query : " + cmd.CommandText);
+                cmd.Parameters.AddWithValue("@entities", entity);
+
+                rdr = cmd.ExecuteReader(CommandBehavior.CloseConnection);
+                while (rdr.Read())
+                {
+                    RelationList relationList = new RelationList();
+                    relationList.luisId = rdr["LUIS_ID"] as string;
+                    relationList.luisIntent = rdr["LUIS_INTENT"] as string;
+                    relationList.luisEntities = rdr["LUIS_ENTITIES"] as string;
+                    relationList.dlgId = Convert.ToInt32(rdr["DLG_ID"]);
+                    relationList.dlgApiDefine = rdr["DLG_API_DEFINE"] as string;
+                    //relationList.apiId = Convert.ToInt32(rdr["API_ID"] ?? 0);
+                    relationList.apiId = rdr["API_ID"].Equals(DBNull.Value) ? 0 : Convert.ToInt32(rdr["API_ID"]);
+                    //DBNull.Value
+                    result.Add(relationList);
+                }
+            }
+            return result;
+        }
+
+
         //KSO END
 
         //TBL_CHATBOT_CONF 정보 가져오기
@@ -985,6 +1022,71 @@ namespace KonaChatBot.DB
             }
         }
 
+        public String SearchCommonEntities
+        {
+            get
+            {
+                String query = Regex.Replace(MessagesController.queryStr, @"[^a-zA-Z0-9ㄱ-힣]", "", RegexOptions.Singleline).Replace(" ", "");
+                SqlDataReader rdr = null;
+                List<RecommendConfirm> rc = new List<RecommendConfirm>();
+                String entityarr = "";
+
+                using (SqlConnection conn = new SqlConnection(connStr))
+                {
+
+                    conn.Open();
+                    SqlCommand cmd = new SqlCommand();
+                    cmd.Connection = conn;
+
+                    //cmd.CommandText += "SELECT  ENTITY_VALUE, ENTITY ";
+                    //cmd.CommandText += "FROM    TBL_COMMON_ENTITY_DEFINE ";
+                    //cmd.CommandText += "WHERE   CHARINDEX(ENTITY_VALUE,@kr_query) > 0";
+
+                    cmd.CommandText += "SELECT ";
+                    cmd.CommandText += "    ISNULL(MAX(CASE WHEN POS = 1 THEN ENTITY END), '') ";
+                    cmd.CommandText += "    + ISNULL(MAX(CASE WHEN POS = 2 THEN ',' + ENTITY END), '') ";
+                    cmd.CommandText += "    + ISNULL(MAX(CASE WHEN POS = 3 THEN ',' + ENTITY END), '') ";
+                    cmd.CommandText += "    + ISNULL(MAX(CASE WHEN POS = 4 THEN ',' + ENTITY END), '') ";
+                    cmd.CommandText += "    + ISNULL(MAX(CASE WHEN POS = 5 THEN ',' + ENTITY END), '') ";
+                    cmd.CommandText += "    + ISNULL(MAX(CASE WHEN POS = 6 THEN ',' + ENTITY END), '') ";
+                    cmd.CommandText += "    + ISNULL(MAX(CASE WHEN POS = 7 THEN ',' + ENTITY END), '') ";
+                    cmd.CommandText += "    + ISNULL(MAX(CASE WHEN POS = 8 THEN ',' + ENTITY END), '') ";
+                    cmd.CommandText += "    + ISNULL(MAX(CASE WHEN POS = 9 THEN ',' + ENTITY END), '') ";
+                    cmd.CommandText += "    + ISNULL(MAX(CASE WHEN POS = 10 THEN ',' + ENTITY END), '') ";
+                    cmd.CommandText += "    + ISNULL(MAX(CASE WHEN POS = 11 THEN ',' + ENTITY END), '') ";
+                    cmd.CommandText += "    + ISNULL(MAX(CASE WHEN POS = 12 THEN ',' + ENTITY END), '') ";
+                    cmd.CommandText += "    + ISNULL(MAX(CASE WHEN POS = 13 THEN ',' + ENTITY END), '') ";
+                    cmd.CommandText += "    + ISNULL(MAX(CASE WHEN POS = 14 THEN ',' + ENTITY END), '') ";
+                    cmd.CommandText += "    + ISNULL(MAX(CASE WHEN POS = 15 THEN ',' + ENTITY END), '') AS ENTITIES ";
+                    cmd.CommandText += "FROM ";
+                    cmd.CommandText += "    (";
+                    cmd.CommandText += "        SELECT  ENTITY, ROW_NUMBER() OVER(ORDER BY ENTITY ASC)  AS POS ";
+                    cmd.CommandText += "        FROM    TBL_COMMON_ENTITY_DEFINE ";
+                    cmd.CommandText += "        WHERE   CHARINDEX(ENTITY, @kr_query) > 0 ";
+                    cmd.CommandText += "        GROUP BY ENTITY ";
+                    cmd.CommandText += "    ) A ";
+
+                    cmd.Parameters.AddWithValue("@kr_query", query);
+
+                    rdr = cmd.ExecuteReader(CommandBehavior.CloseConnection);
+                    //int count = 0;
+                    try
+                    {
+                        while (rdr.Read())
+                        {
+                            entityarr += rdr["ENTITIES"];
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.WriteLine(e.Message);
+                    }
+
+                }
+                return entityarr;
+            }
+        }
+
         public int SelectedRecommendDlgId(string recommendValue)
         {
             SqlDataReader rdr = null;
@@ -1283,7 +1385,7 @@ namespace KonaChatBot.DB
 
                 for (int i = 1; i < entities.Length; i++)
                 {
-                    cmd.CommandText += "OR KEYWORD = '" + entities[i].ToString().Replace("tuix","튜익스").Replace("플럭스", "튜익스") + "'";
+                    cmd.CommandText += "OR KEYWORD = '" + entities[i].ToString() + "'";
                 }
 
                 Debug.WriteLine("price keyword group query : " + cmd.CommandText);

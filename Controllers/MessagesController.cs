@@ -226,7 +226,7 @@ namespace KonaChatBot
                 //캐시 체크
                 cashOrgMent = Regex.Replace(orgMent, @"[^a-zA-Z0-9ㄱ-힣]", "", RegexOptions.Singleline);
                 cacheList = db.CacheChk(cashOrgMent.Replace(" ",""));                     // 캐시 체크
-                
+
 
                 //캐시에 없을 경우
                 if (cacheList.luisIntent == null || cacheList.luisEntities == null)
@@ -242,26 +242,29 @@ namespace KonaChatBot
                     //}
 
                     //루이스 체크
-                    cacheList.luisId = GetMultiLUIS(orgMent);
+                    //cacheList.luisId = GetMultiLUIS(orgMent);
 
-                    float luisScore = (float)Luis["intents"][0]["score"];
-                    int luisEntityCount = (int)Luis["entities"].Count();
-
-                    string luisEntities = "";
-                    string luisType = "";
-                    if (luisScore > Convert.ToDouble(LUIS_SCORE_LIMIT) && luisEntityCount > 0)
+                    if (Luis.Count > 0)
                     {
-                        for (int i = 0; i < luisEntityCount; i++)
+                        float luisScore = (float)Luis["intents"][0]["score"];
+                        int luisEntityCount = (int)Luis["entities"].Count();
+
+                        string luisEntities = "";
+                        string luisType = "";
+                        if (luisScore > Convert.ToDouble(LUIS_SCORE_LIMIT) && luisEntityCount > 0)
                         {
-                            //luisEntities = luisEntities + Luis["entities"][i]["entity"] + ",";
-                            luisType = (string)Luis["entities"][i]["type"];
-                            luisType = Regex.Split(luisType, "::")[1];
-                            luisEntities = luisEntities + luisType + ",";
+                            for (int i = 0; i < luisEntityCount; i++)
+                            {
+                                //luisEntities = luisEntities + Luis["entities"][i]["entity"] + ",";
+                                luisType = (string)Luis["entities"][i]["type"];
+                                luisType = Regex.Split(luisType, "::")[1];
+                                luisEntities = luisEntities + luisType + ",";
+                            }
+                            Debug.WriteLine("luisEntities - 1 : " + luisEntities);
                         }
-                        Debug.WriteLine("luisEntities - 1 : " + luisEntities);
                     }
 
-                    if(luisEntities.Length > 0)
+                    if (luisEntities.Length > 0)
                     {
                         luisEntities = luisEntities.Substring(0, luisEntities.LastIndexOf(","));
                         luisEntities = Regex.Replace(luisEntities, " ", "");

@@ -21,7 +21,7 @@ namespace KonaChatBot.Dialogs
         private string luis_intent;
         private string[] entities;
         private string queryStr;
-        
+
 
         public PriceApi(string luis_intent, string entitiesStr, string queryStr)
         {
@@ -471,8 +471,29 @@ namespace KonaChatBot.Dialogs
                     }
 
                 }
+
+                DateTime endTime = DateTime.Now;
+                Debug.WriteLine("프로그램 수행시간 : {0}/ms", ((endTime - MessagesController.startTime).Milliseconds));
+                Debug.WriteLine("* activity.Type : " + context.Activity.Type);
+                Debug.WriteLine("* activity.Recipient.Id : " + context.Activity.Recipient.Id);
+                Debug.WriteLine("* activity.ServiceUrl : " + context.Activity.ServiceUrl);
+                //var message = await result;
+                int dbResult = db.insertUserQuery(Regex.Replace(MessagesController.queryStr, @"[^a-zA-Z0-9ㄱ-힣]", "", RegexOptions.Singleline), "", "", "0", "", 'D', 0);
+                Debug.WriteLine("INSERT QUERY RESULT : " + dbResult.ToString());
+
+                if (db.insertHistory(context.Activity.Conversation.Id, MessagesController.queryStr, "ERROR", context.Activity.ChannelId, ((endTime - MessagesController.startTime).Milliseconds), 0) > 0)
+                {
+                    Debug.WriteLine("HISTORY RESULT SUCCESS");
+                    //HistoryLog("HISTORY RESULT SUCCESS");
+                }
+                else
+                {
+                    Debug.WriteLine("HISTORY RESULT SUCCESS");
+                    //HistoryLog("HISTORY RESULT FAIL");
+                }
+
             }
-            
+
             if (priceMediaDlgList.Count > 0)
             {
                 string cardDiv = "";
@@ -621,13 +642,31 @@ namespace KonaChatBot.Dialogs
                 }
                 await context.PostAsync(reply);
                 //response = Request.CreateResponse(HttpStatusCode.OK);
-                
+                DateTime endTime = DateTime.Now;
+                Debug.WriteLine("프로그램 수행시간 : {0}/ms", ((endTime - MessagesController.startTime).Milliseconds));
+                Debug.WriteLine("* activity.Type : " + context.Activity.Type);
+                Debug.WriteLine("* activity.Recipient.Id : " + context.Activity.Recipient.Id);
+                Debug.WriteLine("* activity.ServiceUrl : " + context.Activity.ServiceUrl);
+                //var message = await result;
+                int dbResult = db.insertUserQuery(Regex.Replace(MessagesController.queryStr, @"[^a-zA-Z0-9ㄱ-힣]", "", RegexOptions.Singleline), MessagesController.cacheList.luisIntent, MessagesController.cacheList.luisEntities, "0", MessagesController.cacheList.luisId, 'H', 0);
+                Debug.WriteLine("INSERT QUERY RESULT : " + dbResult.ToString());
+
+                if (db.insertHistory(context.Activity.Conversation.Id, MessagesController.queryStr, MessagesController.cacheList.dlgId.ToString(), context.Activity.ChannelId, ((endTime - MessagesController.startTime).Milliseconds), 0) > 0)
+                {
+                    Debug.WriteLine("HISTORY RESULT SUCCESS");
+                    //HistoryLog("HISTORY RESULT SUCCESS");
+                }
+                else
+                {
+                    Debug.WriteLine("HISTORY RESULT FAIL");
+                    //HistoryLog("HISTORY RESULT FAIL");
+                }
 
 
             }
             context.Done<IMessageActivity>(null);
         }
-        
+
         private static Attachment GetHeroCard(string title, string subtitle, string text, CardImage cardImage, /*CardAction cardAction*/ List<CardAction> buttons, string cardDivision, string cardValue)
         {
             var heroCard = new UserHeroCard

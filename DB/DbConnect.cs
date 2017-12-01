@@ -1283,7 +1283,7 @@ namespace KonaChatBot.DB
 
                 for (int i = 1; i < entities.Length; i++)
                 {
-                    cmd.CommandText += "OR KEYWORD = '" + entities[i].ToString() + "'";
+                    cmd.CommandText += "OR KEYWORD = '" + entities[i].ToString().Replace("tuix","튜익스").Replace("플럭스", "튜익스") + "'";
                 }
 
                 Debug.WriteLine("price keyword group query : " + cmd.CommandText);

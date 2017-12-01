@@ -9,7 +9,7 @@ using System.Diagnostics;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 using Microsoft.Bot.Builder.ConnectorEx;
-
+using System.Text.RegularExpressions;
 
 namespace KonaChatBot.Dialogs
 {
@@ -257,7 +257,7 @@ namespace KonaChatBot.Dialogs
             Debug.WriteLine("* activity.Recipient.Id : " + activity.Recipient.Id);
             Debug.WriteLine("* activity.ServiceUrl : " + activity.ServiceUrl);
 
-            int dbResult = db.insertUserQuery(MessagesController.queryStr, MessagesController.luisIntent, MessagesController.luisEntities, "0", MessagesController.luisId, 'H', 0);
+            int dbResult = db.insertUserQuery(Regex.Replace(MessagesController.queryStr, @"[^a-zA-Z0-9ㄱ-힣]", "", RegexOptions.Singleline), MessagesController.luisIntent, MessagesController.luisEntities, "0", MessagesController.luisId, 'H', 0);
             Debug.WriteLine("INSERT QUERY RESULT : " + dbResult.ToString());
 
             if (db.insertHistory(activity.Conversation.Id, MessagesController.queryStr, MessagesController.relationList[0].dlgId.ToString(), activity.ChannelId, ((endTime - MessagesController.startTime).Milliseconds), 0) > 0)

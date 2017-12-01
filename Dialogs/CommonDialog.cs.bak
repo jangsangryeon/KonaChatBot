@@ -33,20 +33,12 @@ namespace KonaChatBot.Dialogs
         //    return Task.CompletedTask;
         //}
 
+
         public async Task StartAsync(IDialogContext context)
         {
-
-            context.Wait(this.MessageReceivedAsync);
-        }
-
-        //public async Task StartAsync(IDialogContext context)
-        //{
-        //    context.Wait(this.MessageReceivedAsync);
-        //}
-
-
-        private async Task MessageReceivedAsync(IDialogContext context, IAwaitable<IMessageActivity> result)
-        {
+            var activity = context.Activity;
+            channel = activity.ChannelId;
+            orgMent = MessagesController.queryStr;
             String beforeMent = "";
             int facebookpagecount = 1;
             int fbLeftCardCnt = 0;
@@ -63,7 +55,7 @@ namespace KonaChatBot.Dialogs
                     fbLeftCardCnt++;
                 }
             }
-            
+
 
             var reply = context.MakeMessage();
             reply.AttachmentLayout = AttachmentLayoutTypes.Carousel;
@@ -84,20 +76,24 @@ namespace KonaChatBot.Dialogs
                             if (Int32.Parse(tempcard.card_order_no) > (MAXFACEBOOKCARDS * facebookpagecount) && Int32.Parse(tempcard.card_order_no) <= (MAXFACEBOOKCARDS * (facebookpagecount + 1)))
                             {
                                 tempAttachment = getAttachmentFromDialog(tempcard);
-                            } else if (Int32.Parse(tempcard.card_order_no) > (MAXFACEBOOKCARDS * (facebookpagecount + 1)))
+                            }
+                            else if (Int32.Parse(tempcard.card_order_no) > (MAXFACEBOOKCARDS * (facebookpagecount + 1)))
                             {
                                 fbLeftCardCnt++;
                             }
-                        } else if (channel.Equals("facebook"))
+                        }
+                        else if (channel.Equals("facebook"))
                         {
                             if (Int32.Parse(tempcard.card_order_no) <= MAXFACEBOOKCARDS)
                             {
                                 tempAttachment = getAttachmentFromDialog(tempcard);
-                            } else
+                            }
+                            else
                             {
                                 fbLeftCardCnt++;
                             }
-                        } else
+                        }
+                        else
                         {
                             tempAttachment = getAttachmentFromDialog(tempcard);
                         }
@@ -127,18 +123,43 @@ namespace KonaChatBot.Dialogs
                 //    reply.Attachments.Clear();
                 //}
             }
+            DateTime endTime = DateTime.Now;
+            Debug.WriteLine("프로그램 수행시간 : {0}/ms", ((endTime - MessagesController.startTime).Milliseconds));
+            Debug.WriteLine("* activity.Type : " + activity.Type);
+            Debug.WriteLine("* activity.Recipient.Id : " + activity.Recipient.Id);
+            Debug.WriteLine("* activity.ServiceUrl : " + activity.ServiceUrl);
+
+            int dbResult = db.insertUserQuery(MessagesController.queryStr, MessagesController.luisIntent, MessagesController.luisEntities, "0", MessagesController.luisId, 'H', 0);
+            Debug.WriteLine("INSERT QUERY RESULT : " + dbResult.ToString());
+
+            if (db.insertHistory(activity.Conversation.Id, MessagesController.queryStr, MessagesController.relationList[0].dlgId.ToString(), activity.ChannelId, ((endTime - MessagesController.startTime).Milliseconds), 0) > 0)
+            {
+                Debug.WriteLine("HISTORY RESULT SUCCESS");
+                //HistoryLog("HISTORY RESULT SUCCESS");
+            }
+            else
+            {
+                Debug.WriteLine("HISTORY RESULT SUCCESS");
+                //HistoryLog("HISTORY RESULT FAIL");
+            }
             context.ConversationData.SetValue("commonBeforeQustion", orgMent);
-            context.Done("");
+            context.Done<IMessageActivity>(null);
         }
-        private static Attachment GetHeroCard(string title, string subtitle, string text, CardImage cardImage, /*CardAction cardAction*/ List<CardAction> buttons)
+
+
+        private static Attachment GetHeroCard(string title, string subtitle, string text, CardImage cardImage, /*CardAction cardAction*/ List<CardAction> buttons, string cardDivision, string cardValue)
         {
-            var heroCard = new HeroCard
+            var heroCard = new UserHeroCard
             {
                 Title = title,
                 Subtitle = subtitle,
                 Text = text,
                 Images = new List<CardImage>() { cardImage },
                 Buttons = buttons,
+                Card_division = cardDivision,
+                Card_value = cardValue
+
+
             };
 
             return heroCard.ToAttachment();
@@ -146,7 +167,8 @@ namespace KonaChatBot.Dialogs
         private Attachment getAttachmentFromDialog(DialogList dlg)
         {
             Attachment returnAttachment = new Attachment();
-
+            string cardDiv = "";
+            string cardVal = "";
             if (dlg.dlgType.Equals(TEXTDLG))
             {
                 HeroCard plCard = new HeroCard()
@@ -214,12 +236,26 @@ namespace KonaChatBot.Dialogs
                     cardButtons.Add(plButton);
                 }
 
-                HeroCard plCard = new HeroCard()
+                if (!string.IsNullOrEmpty(dlg.cardDivision))
+                {
+                    cardDiv = dlg.cardDivision;
+                }
+
+                if (!string.IsNullOrEmpty(dlg.cardValue))
+                {
+                    //cardVal = priceMediaDlgList[i].cardValue.Replace();
+                    cardVal = dlg.cardValue;
+                }
+
+                HeroCard plCard = new UserHeroCard()
                 {
                     Title = dlg.cardTitle,
                     Text = dlg.cardTitle,
                     Images = cardImages,
-                    Buttons = cardButtons
+                    Buttons = cardButtons,
+                    Card_division = cardDiv,
+                    Card_value = cardVal
+                    
                 };
                 returnAttachment = plCard.ToAttachment();
             }
@@ -233,6 +269,9 @@ namespace KonaChatBot.Dialogs
         private Attachment getAttachmentFromDialog(CardList card)
         {
             Attachment returnAttachment = new Attachment();
+
+            string cardDiv = "";
+            string cardVal = "";
 
             List<CardImage> cardImages = new List<CardImage>();
             List<CardAction> cardButtons = new List<CardAction>();
@@ -290,12 +329,25 @@ namespace KonaChatBot.Dialogs
                 cardButtons.Add(plButton);
             }
 
-            HeroCard plCard = new HeroCard()
+            if (!string.IsNullOrEmpty( card.cardDivision))
+            {
+                cardDiv = card.cardDivision;
+            }
+
+            if (!string.IsNullOrEmpty(card.cardValue))
+            {
+                //cardVal = priceMediaDlgList[i].cardValue.Replace();
+                cardVal = card.cardValue;
+            }
+
+            HeroCard plCard = new UserHeroCard()
             {
                 Title = card.cardTitle,
                 Text = card.cardTitle,
                 Images = cardImages,
-                Buttons = cardButtons
+                Buttons = cardButtons,
+                Card_division = cardDiv,
+                Card_value = cardVal
             };
             returnAttachment = plCard.ToAttachment();
 

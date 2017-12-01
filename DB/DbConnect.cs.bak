@@ -952,16 +952,20 @@ namespace KonaChatBot.DB
                 SqlDataReader rdr = null;
                 List<RecommendConfirm> rc = new List<RecommendConfirm>();
                 using (SqlConnection conn = new SqlConnection(connStr))
-                {
+                {
+
                     conn.Open();
                     SqlCommand cmd = new SqlCommand();
                     cmd.Connection = conn;
 
                     cmd.CommandText += "SELECT  KEYWORD, KEYWORDGROUP ";
                     cmd.CommandText += "FROM    TBL_RECOMMEND_KEYWORD ";
-                    cmd.CommandText += "WHERE   CHARINDEX(KEYWORD,@kr_query) > 0";
-                    cmd.Parameters.AddWithValue("@kr_query", MessagesController.queryStr);
-                    rdr = cmd.ExecuteReader(CommandBehavior.CloseConnection);
+                    cmd.CommandText += "WHERE   CHARINDEX(KEYWORD,@kr_query) > 0";
+
+                    cmd.Parameters.AddWithValue("@kr_query", MessagesController.queryStr);
+
+                    rdr = cmd.ExecuteReader(CommandBehavior.CloseConnection);
+
                     try
                     {
                         while (rdr.Read())
@@ -1559,6 +1563,8 @@ namespace KonaChatBot.DB
                     mediaDlg.btn4Context = btn4Context;
                     mediaDlg.cardDivision = cardDivision;
                     mediaDlg.cardValue = cardValue;
+                    mediaDlg.groupNm = group;
+                    mediaDlg.entityDetail = tempStr;
 
                     priceMediaDlgList.Add(mediaDlg);
                 }

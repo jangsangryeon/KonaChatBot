@@ -9,6 +9,9 @@ using System.Diagnostics;
 using System.Net.Http;
 using Newtonsoft.Json;
 using SecCsChatBotDemo.Models;
+using System.Net;
+using System.Web.Http;
+using System.Text.RegularExpressions;
 
 namespace KonaChatBot.Dialogs
 {
@@ -18,11 +21,11 @@ namespace KonaChatBot.Dialogs
         private string luis_intent;
         private string[] entities;
         private string queryStr;
+        
 
         public PriceApi(string luis_intent, string entitiesStr, string queryStr)
         {
             this.luis_intent = luis_intent;
-
             //엔티티 comma split
             if (entitiesStr != null && !entitiesStr.Equals(""))
             {
@@ -31,23 +34,15 @@ namespace KonaChatBot.Dialogs
             this.queryStr = queryStr;
         }
 
-        //public Task StartAsync(IDialogContext context)
-        //{
-        //    context.Wait(MessageReceivedAsync);
-
-        //    return Task.CompletedTask;
-        //}
         public async Task StartAsync(IDialogContext context)
         {
-            context.Wait(this.MessageReceivedAsync);
-        }
-
-        private async Task MessageReceivedAsync(IDialogContext context, IAwaitable<object> result)
-        {
             DbConnect db = new DbConnect();
+            //MessagesController.startTime = DateTime.Now;
+            HttpResponseMessage response;
 
             //키워드 그룹 추출
-            List<KeywordGroup> keywordgrouplist = db.SelectKeywordGroupList(entities);
+            //List<KeywordGroup> keywordgrouplist = db.SelectKeywordGroupList(entities);
+            List<KeywordGroup> keywordgrouplist = db.SelectKeywordGroupList(MessagesController.cacheList.luisEntities.Split(','));
             List<Price_API_DLG> priceApiDlgList = new List<Price_API_DLG>();
             List<PriceMediaDlgList> priceMediaDlgList = new List<PriceMediaDlgList>();
 
@@ -252,7 +247,15 @@ namespace KonaChatBot.Dialogs
                     else if (priceApiDlgList[i].dlgType == "MEDIA")
                     {
                         Debug.WriteLine("card dlg id = " + priceApiDlgList[i].priceDlgId);
-                        priceMediaDlgList = db.SelectPriceMediaDlgList(priceApiDlgList[i].priceDlgId, "INTERIORWORD", entitlekeyworddetail);
+                        if (entitlekeyworddetail != "INTERIORCOLOR=내장색상")
+                        {
+                            priceMediaDlgList = db.SelectPriceMediaDlgList(priceApiDlgList[i].priceDlgId, "INTERIORWORD", entitlekeyworddetail);
+                        }
+                        else
+                        {
+                            priceMediaDlgList = db.SelectPriceMediaDlgList(16, "INTERIORWORD", entitlekeyworddetail);
+                        }
+
                     }
 
                 }
@@ -279,7 +282,15 @@ namespace KonaChatBot.Dialogs
                     else if (priceApiDlgList[i].dlgType == "MEDIA")
                     {
                         Debug.WriteLine("card dlg id = " + priceApiDlgList[i].priceDlgId);
-                        priceMediaDlgList = db.SelectPriceMediaDlgList(priceApiDlgList[i].priceDlgId, "EXTERIORWORD", entitlekeyworddetail);
+                        if (entitlekeyworddetail != "EXTERIORCOLOR=외장색상")
+                        {
+                            priceMediaDlgList = db.SelectPriceMediaDlgList(priceApiDlgList[i].priceDlgId, "EXTERIORWORD", entitlekeyworddetail);
+                        }
+                        else
+                        {
+                            priceMediaDlgList = db.SelectPriceMediaDlgList(11, "EXTERIORWORD", entitlekeyworddetail);
+                        }
+
                     }
 
                 }
@@ -361,6 +372,7 @@ namespace KonaChatBot.Dialogs
                     {
                         Debug.WriteLine("card dlg id = " + priceApiDlgList[i].priceDlgId);
                         priceMediaDlgList = db.SelectPriceMediaDlgList(priceApiDlgList[i].priceDlgId, "TRIM", entitlekeyworddetail);
+
                     }
 
                 }
@@ -429,37 +441,114 @@ namespace KonaChatBot.Dialogs
             else
             {
                 Debug.WriteLine("keyword group error : " + entitlekeywordgroup);
+                //entities "가격"
+                Debug.WriteLine("PRICEWORD entitlekeyworddetail : " + entitlekeyworddetail);
+
+
+                List<PriceModelList> priceModelList = db.SelectPriceModelList();
+
+                priceApiDlgList = db.SelectPriceList_API_DLG("PRICEWORD");
+
+                for (int i = 0; i < priceApiDlgList.Count; i++)
+                {
+
+                    Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].keywordGrp);
+                    Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].priceDlgId);
+                    Debug.WriteLine("[ " + i + " ] : " + priceApiDlgList[i].dlgType);
+
+
+                    if (priceApiDlgList[i].dlgType == "TEXT")
+                    {
+                        //db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId)[0].cardText;
+                        await context.PostAsync(db.SelectPriceTextDlgList(priceApiDlgList[i].priceDlgId, "")[0].cardText);
+                    }
+                    else if (priceApiDlgList[i].dlgType == "MEDIA")
+                    {
+                        Debug.WriteLine("card dlg id = " + priceApiDlgList[i].priceDlgId);
+                        Debug.WriteLine("card dlg id = " + entitlekeyworddetail);
+                        Debug.WriteLine("card dlg id = " + entitlekeywordgroup);
+                        priceMediaDlgList = db.SelectPriceMediaDlgList(priceApiDlgList[i].priceDlgId, "PRICEWORD", "");
+                    }
+
+                }
             }
-
-            Translator engineTranslateInfo;
-            Translator trimTranslateInfo;
-            Translator titleTranslateInfo;
-
-
-
+            
             if (priceMediaDlgList.Count > 0)
             {
                 string cardDiv = "";
                 string cardVal = "";
-
+                CardImage cardImage;
                 for (int i = 0; i < priceMediaDlgList.Count; i++)
                 {
-                    engineTranslateInfo = await getTranslate(priceMediaDlgList[i].engine);
-                    trimTranslateInfo = await getTranslate(priceMediaDlgList[i].trim);
-                    titleTranslateInfo = await getTranslate(priceMediaDlgList[i].cardTitle);
-                     
-                    //translateInfo.data.translations[0].translatedText.Replace("&#39;", "'")
-                    //Debug.WriteLine("priceMediaDlgList[i].cardTitle color : " + engineTranslateInfo.data.translations[0].translatedText);
-                    //Debug.WriteLine("priceMediaDlgList[i].cardTitle color : " + trimTranslateInfo.data.translations[0].translatedText);
-                    //Debug.WriteLine("priceMediaDlgList[i].cardTitle color : " + titleTranslateInfo.data.translations[0].translatedText);
-                    //Debug.WriteLine("AA : " + priceMediaDlgList[i].mediaUrl);
-                    //Debug.WriteLine("AA : " + priceMediaDlgList[i].mediaUrl.Replace("CALL(ENGINEIMAGE_URL)", engineTranslateInfo.data.translations[0].translatedText.Replace(" ", "")).Replace("CALL(TRIMIMAGE_URL)", trimTranslateInfo.data.translations[0].translatedText.Replace(" ", "")).Replace("CALL(IMAGE_URL)", titleTranslateInfo.data.translations[0].translatedText));
-                    //Debug.WriteLine("AA : " + priceMediaDlgList[i].mediaUrl.Replace("CALL(OPTIMAGE_URL)", titleTranslateInfo.data.translations[0].translatedText.Replace(" ", "_")).Replace("CALL(ENGINEIMAGE_URL)", engineTranslateInfo.data.translations[0].translatedText.Replace(" ", "")).Replace("CALL(TRIMIMAGE_URL)", trimTranslateInfo.data.translations[0].translatedText.Replace(" ", "")).Replace("CALL(IMAGE_URL)", titleTranslateInfo.data.translations[0].translatedText));
-                    //CardImage 입력
-                    CardImage cardImage = new CardImage()     
+                    Translator imgNmTranslateInfo = new Translator();
+                    if (priceMediaDlgList[0].groupNm == "TRIMWORD,EXTERIORWORD" || priceMediaDlgList[0].groupNm == "TRIMWORD,INTERIORWORD" || priceMediaDlgList[0].groupNm == "TRIMWORD,OPTIONWORD")//|| priceMediaDlgList[0].groupNm == "OPTION" || priceMediaDlgList[0].groupNm == "EXTERIOR" || priceMediaDlgList[0].groupNm == "INTERIOR")
                     {
-                        Url = priceMediaDlgList[i].mediaUrl.Replace("CALL(OPTIMAGE_URL)", titleTranslateInfo.data.translations[0].translatedText.Replace(" ", "_")).Replace("CALL(ENGINEIMAGE_URL)", engineTranslateInfo.data.translations[0].translatedText.Replace(" ", "")).Replace("CALL(TRIMIMAGE_URL)", trimTranslateInfo.data.translations[0].translatedText.Replace(" ", "")).Replace("CALL(IMAGE_URL)", titleTranslateInfo.data.translations[0].translatedText.Replace(" ", "").Replace("DarkKnight", "DarkNight"))
-                    };
+                        imgNmTranslateInfo = await getTranslate(priceMediaDlgList[i].cardTitle);
+                    }
+                    else if (priceMediaDlgList[0].groupNm == "OPTIONWORD" || priceMediaDlgList[0].groupNm == "OPTION" || priceMediaDlgList[0].groupNm == "EXTERIOR" || priceMediaDlgList[0].groupNm == "INTERIOR")
+                    {
+                        imgNmTranslateInfo = await getTranslate(priceMediaDlgList[i].cardTitle);
+                    }
+                    else if (priceMediaDlgList[0].groupNm == "PRICEWORD")
+                    {
+                        imgNmTranslateInfo = await getTranslate(priceMediaDlgList[i].engine);
+                    }
+                    else if ((priceMediaDlgList[0].groupNm == "EXTERIORWORD" && priceMediaDlgList[0].entityDetail == "EXTERIORCOLOR=외장색상") || (priceMediaDlgList[0].groupNm == "INTERIORWORD" && priceMediaDlgList[0].entityDetail == "INTERIORCOLOR=내장색상"))
+                    {
+                        imgNmTranslateInfo = await getTranslate(priceMediaDlgList[i].cardTitle);
+                    }
+                    else
+                    {
+                        string trimNm = "";
+                        if (!string.IsNullOrEmpty(priceMediaDlgList[i].trim))
+                        {
+
+                            if (priceMediaDlgList[i].trim.Contains(";"))
+                            {
+                                trimNm = priceMediaDlgList[i].trim.Split(';')[0].ToString();
+                            }
+                            else
+                            {
+                                trimNm = priceMediaDlgList[i].trim;
+                            }
+                        }
+                        else
+                        {
+                            trimNm = "";
+                        }
+                        imgNmTranslateInfo = await getTranslate(trimNm);
+                    }
+
+
+                    if (priceMediaDlgList[0].groupNm == "TRIMWORD,OPTIONWORD" || priceMediaDlgList[0].groupNm == "OPTION" || priceMediaDlgList[0].groupNm == "OPTIONWORD")
+                    {
+                        cardImage = new CardImage()
+                        {
+                            Url = priceMediaDlgList[i].mediaUrl.Replace("CALL(IMAGE_URL)", imgNmTranslateInfo.data.translations[0].translatedText.Replace(" ", "_"))
+                        };
+                    }
+                    else if (priceMediaDlgList[0].groupNm == "EXTERIORWORD" && priceMediaDlgList[0].entityDetail == "EXTERIORCOLOR=외장색상")
+                    {
+                        cardImage = new CardImage()
+                        {
+                            Url = priceMediaDlgList[i].mediaUrl.Replace("CALL(IMAGE_URL)", imgNmTranslateInfo.data.translations[0].translatedText.Replace(" ", "").Replace("DarkKnight", "DarkNight"))
+                        };
+                    }
+                    else if (priceMediaDlgList[0].groupNm == "INTERIORWORD" && priceMediaDlgList[0].entityDetail == "INTERIORCOLOR=내장색상")
+                    {
+                        cardImage = new CardImage()
+                        {
+                            Url = priceMediaDlgList[i].mediaUrl.Replace("CALL(IMAGE_URL)", imgNmTranslateInfo.data.translations[0].translatedText.Replace(" ", ""))
+                        };
+                    }
+                    else
+                    {
+                        cardImage = new CardImage()
+                        {
+                            Url = priceMediaDlgList[i].mediaUrl.Replace("CALL(IMAGE_URL)", imgNmTranslateInfo.data.translations[0].translatedText.Replace(" ", "").Replace("DarkKnight", "DarkNight"))
+                        };
+                    }
+
 
                     //CardAction 입력
                     List<CardAction> cardButtons = new List<CardAction>();
@@ -514,8 +603,7 @@ namespace KonaChatBot.Dialogs
 
                     if (priceMediaDlgList[i].cardValue.Length != 0)
                     {
-                        //cardVal = priceMediaDlgList[i].cardValue.Replace();
-                        cardVal = priceMediaDlgList[i].cardValue.Replace("CALL(OPTIMAGE_URL)", titleTranslateInfo.data.translations[0].translatedText.Replace(" ", "_")).Replace("CALL(IMAGE_URL)", titleTranslateInfo.data.translations[0].translatedText.Replace(" ", "").Replace("DarkKnight", "DarkNight"));
+                        cardVal = priceMediaDlgList[i].cardValue.Replace("CALL(IMAGE_URL)", imgNmTranslateInfo.data.translations[0].translatedText.Replace(" ", "").Replace("DarkKnight", "DarkNight"));
                     }
 
 
@@ -532,118 +620,14 @@ namespace KonaChatBot.Dialogs
                     reply.Attachments.Add(GetHeroCard(priceMediaDlgList[i].cardTitle, priceMediaDlgList[i].cardSubTitle, priceMediaDlgList[i].cardText, cardImage, cardButtons, cardDiv, cardVal));
                 }
                 await context.PostAsync(reply);
+                //response = Request.CreateResponse(HttpStatusCode.OK);
+                
+
+
             }
-
-            context.Done("");
-            //await context.PostAsync(returndialog);
-
-            // 변수 선언
-            //string replaceStr = "";
-            //엔티티 type, 엔티티 value 추출
-            //List<TestDriveList_API> SelectTestDriveList_API = db.SelectTestDriveList_API(luis_intent, entitiesStr, queryStr);
-            ////다이얼로그 ID 추출
-            //List<TestDriveList_API_DLG> SelectTestDriveList_API_DLG = db.SelectTestDriveList_API_DLG(SelectTestDriveList_API[0].entityType);
-
-
-            //var reply = context.MakeMessage();
-            //reply.AttachmentLayout = AttachmentLayoutTypes.Carousel;
-
-            //for (int td = 0; td < SelectTestDriveList_API_DLG.Count; td++)
-            //{
-            //    if (SelectTestDriveList_API_DLG[td].dlg_type.Equals(1))
-            //    {
-            //        Debug.WriteLine("GUBUN 1");
-            //    }
-            //    else if (SelectTestDriveList_API_DLG[td].dlg_type.Equals(2))
-            //    {
-            //        Debug.WriteLine("GUBUN 2");
-            //        //텍스트 값 가져오기
-            //        List<TestDriveList_API_DLG_TEXT> SelectTestDriveList_API_DLG_TEXT = db.SelectTestDriveList_API_DLG_TEXT(SelectTestDriveList_API_DLG[td].testdrive_dlg_id);
-            //        //예외처리
-            //        if (SelectTestDriveList_API_DLG_TEXT.Count != 0)
-            //        {
-            //            replaceStr = SelectTestDriveList_API_DLG_TEXT[0].testdrive_card_text;
-            //        }
-            //        else
-            //        {
-            //            replaceStr = "";
-            //        }
-
-            //    }
-            //    else if (SelectTestDriveList_API_DLG[td].dlg_type.Equals(3))
-            //    {
-            //        Debug.WriteLine("GUBUN 3");
-            //    }
-            //    else
-            //    {
-            //        Debug.WriteLine("GUBUN 4");
-            //        //미디어 값 가져오기
-            //        List<TestDriveList_API_DLG_MEDIA> SelectTestDriveList_API_DLG_MEDIA = db.SelectTestDriveList_API_DLG_MEDIA(SelectTestDriveList_API_DLG[td].testdrive_dlg_id, SelectTestDriveList_API[0].entityValue);
-
-            //        for (int i = 0; i < SelectTestDriveList_API_DLG_MEDIA.Count; i++)
-            //        {
-            //            //CardImage 입력
-            //            CardImage cardImage = new CardImage()
-            //            {
-            //                Url = SelectTestDriveList_API_DLG_MEDIA[i].media_url
-            //            };
-
-            //            //CardAction 입력
-            //            List<CardAction> cardButtons = new List<CardAction>();
-
-            //            if (SelectTestDriveList_API_DLG_MEDIA[i].btn_1_context.Length != 0)
-            //            {
-            //                CardAction plButton = new CardAction()
-            //                {
-            //                    Value = SelectTestDriveList_API_DLG_MEDIA[i].btn_1_context,
-            //                    Type = SelectTestDriveList_API_DLG_MEDIA[i].btn_1_type,
-            //                    Title = SelectTestDriveList_API_DLG_MEDIA[i].btn_1_title
-            //                };
-            //                cardButtons.Add(plButton);
-            //            }
-
-            //            if (SelectTestDriveList_API_DLG_MEDIA[i].btn_2_context.Length != 0)
-            //            {
-            //                CardAction plButton = new CardAction()
-            //                {
-            //                    Value = SelectTestDriveList_API_DLG_MEDIA[i].btn_2_context,
-            //                    Type = SelectTestDriveList_API_DLG_MEDIA[i].btn_2_type,
-            //                    Title = SelectTestDriveList_API_DLG_MEDIA[i].btn_2_title
-            //                };
-            //                cardButtons.Add(plButton);
-            //            }
-
-            //            if (SelectTestDriveList_API_DLG_MEDIA[i].btn_3_context.Length != 0)
-            //            {
-            //                CardAction plButton = new CardAction()
-            //                {
-            //                    Value = SelectTestDriveList_API_DLG_MEDIA[i].btn_3_context,
-            //                    Type = SelectTestDriveList_API_DLG_MEDIA[i].btn_3_type,
-            //                    Title = SelectTestDriveList_API_DLG_MEDIA[i].btn_3_title
-            //                };
-            //                cardButtons.Add(plButton);
-            //            }
-
-            //            //맵에서 text로 출력되는 주소값 치환
-            //            if (!string.IsNullOrEmpty(replaceStr))
-            //            {
-            //                reply.Text = replaceStr.Replace("CALL(지점 주소)", SelectTestDriveList_API_DLG_MEDIA[i].address);
-            //                await context.PostAsync(reply);
-            //                replaceStr = "";
-            //                reply.Text = "";
-            //            }
-
-
-            //            reply.Attachments.Add(GetHeroCard(SelectTestDriveList_API_DLG_MEDIA[i].card_title, SelectTestDriveList_API_DLG_MEDIA[i].card_subtitle, SelectTestDriveList_API_DLG_MEDIA[i].card_text, cardImage, cardButtons));
-            //        }
-
-            //        await context.PostAsync(reply);
-            //        //reply 초기화
-            //        reply.Attachments.Clear();
-            //    }
-            //
-            //}
+            context.Done<IMessageActivity>(null);
         }
+        
         private static Attachment GetHeroCard(string title, string subtitle, string text, CardImage cardImage, /*CardAction cardAction*/ List<CardAction> buttons, string cardDivision, string cardValue)
         {
             var heroCard = new UserHeroCard

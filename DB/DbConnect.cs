@@ -1043,29 +1043,7 @@ namespace KonaChatBot.DB
                     //cmd.CommandText += "FROM    TBL_COMMON_ENTITY_DEFINE ";
                     //cmd.CommandText += "WHERE   CHARINDEX(ENTITY_VALUE,@kr_query) > 0";
 
-                    cmd.CommandText += "SELECT ";
-                    cmd.CommandText += "    ISNULL(MAX(CASE WHEN POS = 1 THEN ENTITY END), '') ";
-                    cmd.CommandText += "    + ISNULL(MAX(CASE WHEN POS = 2 THEN ',' + ENTITY END), '') ";
-                    cmd.CommandText += "    + ISNULL(MAX(CASE WHEN POS = 3 THEN ',' + ENTITY END), '') ";
-                    cmd.CommandText += "    + ISNULL(MAX(CASE WHEN POS = 4 THEN ',' + ENTITY END), '') ";
-                    cmd.CommandText += "    + ISNULL(MAX(CASE WHEN POS = 5 THEN ',' + ENTITY END), '') ";
-                    cmd.CommandText += "    + ISNULL(MAX(CASE WHEN POS = 6 THEN ',' + ENTITY END), '') ";
-                    cmd.CommandText += "    + ISNULL(MAX(CASE WHEN POS = 7 THEN ',' + ENTITY END), '') ";
-                    cmd.CommandText += "    + ISNULL(MAX(CASE WHEN POS = 8 THEN ',' + ENTITY END), '') ";
-                    cmd.CommandText += "    + ISNULL(MAX(CASE WHEN POS = 9 THEN ',' + ENTITY END), '') ";
-                    cmd.CommandText += "    + ISNULL(MAX(CASE WHEN POS = 10 THEN ',' + ENTITY END), '') ";
-                    cmd.CommandText += "    + ISNULL(MAX(CASE WHEN POS = 11 THEN ',' + ENTITY END), '') ";
-                    cmd.CommandText += "    + ISNULL(MAX(CASE WHEN POS = 12 THEN ',' + ENTITY END), '') ";
-                    cmd.CommandText += "    + ISNULL(MAX(CASE WHEN POS = 13 THEN ',' + ENTITY END), '') ";
-                    cmd.CommandText += "    + ISNULL(MAX(CASE WHEN POS = 14 THEN ',' + ENTITY END), '') ";
-                    cmd.CommandText += "    + ISNULL(MAX(CASE WHEN POS = 15 THEN ',' + ENTITY END), '') AS ENTITIES ";
-                    cmd.CommandText += "FROM ";
-                    cmd.CommandText += "    (";
-                    cmd.CommandText += "        SELECT  ENTITY, ROW_NUMBER() OVER(ORDER BY ENTITY ASC)  AS POS ";
-                    cmd.CommandText += "        FROM    TBL_COMMON_ENTITY_DEFINE ";
-                    cmd.CommandText += "        WHERE   CHARINDEX(ENTITY, @kr_query) > 0 ";
-                    cmd.CommandText += "        GROUP BY ENTITY ";
-                    cmd.CommandText += "    ) A ";
+                    cmd.CommandText += "SELECT RESULT AS ENTITIES FROM [dbo].[FN_ENTITY_ORDERBY](@kr_query) ";
 
                     cmd.Parameters.AddWithValue("@kr_query", query);
 

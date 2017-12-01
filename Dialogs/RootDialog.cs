@@ -45,18 +45,21 @@ namespace KonaChatBot.Dialogs
             //MessagesController.relationList = db.DefineTypeChk(MessagesController.luisId, MessagesController.luisIntent, MessagesController.luisEntities);
             String fullentity = db.SearchCommonEntities;
 
-            Debug.WriteLine("fullentity = " + fullentity + "===="+ fullentity.Length);
-            Debug.WriteLine("MessagesController.luisEntities = " + MessagesController.luisEntities + "====" + MessagesController.luisEntities.Length);
+            //Debug.WriteLine("fullentity = " + fullentity + "====" + fullentity.Length);
+            //Debug.WriteLine("MessagesController.luisEntities = " + MessagesController.luisEntities + "====" + MessagesController.luisEntities.Length);
 
             string compareLuisEntity = "";
-
-            //entity 길이 비교
-            if (fullentity.Length > MessagesController.luisEntities.Length)
+            if (!String.IsNullOrEmpty(fullentity))
             {
-                compareLuisEntity = fullentity;
-            } else
-            {
-                compareLuisEntity = MessagesController.luisEntities;
+                //entity 길이 비교
+                if (fullentity.Length > MessagesController.luisEntities.Length)
+                {
+                    compareLuisEntity = fullentity;
+                }
+                else
+                {
+                    compareLuisEntity = MessagesController.luisEntities;
+                }
             }
 
             //DefineTypeChkSpare에서는 인텐트나 루이스아이디조건 없이 엔티티만 일치하면 다이얼로그 리턴

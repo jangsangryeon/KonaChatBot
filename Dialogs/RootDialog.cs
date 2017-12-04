@@ -48,9 +48,9 @@ namespace KonaChatBot.Dialogs
             //Debug.WriteLine("fullentity = " + fullentity + "====" + fullentity.Length);
             //Debug.WriteLine("MessagesController.luisEntities = " + MessagesController.luisEntities + "====" + MessagesController.luisEntities.Length);
 
-            if (!String.IsNullOrEmpty(MessagesController.luisEntities))
+            if (!string.IsNullOrEmpty(fullentity))
             {
-                if (!string.IsNullOrEmpty(fullentity))
+                if (!String.IsNullOrEmpty(MessagesController.luisEntities))
                 {
                     //entity 길이 비교
                     if (fullentity.Length > MessagesController.luisEntities.Length || MessagesController.luisIntent.Equals(null) || MessagesController.luisIntent.Equals(""))
@@ -62,6 +62,10 @@ namespace KonaChatBot.Dialogs
                     {
                         MessagesController.relationList = db.DefineTypeChk(MessagesController.luisId, MessagesController.luisIntent, MessagesController.luisEntities);
                     }
+                }
+                else
+                {
+                    MessagesController.relationList = db.DefineTypeChkSpare(fullentity);
                 }
             }
 

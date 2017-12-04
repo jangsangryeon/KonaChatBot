@@ -522,7 +522,8 @@ namespace KonaChatBot.DB
                 cmd.Connection = conn;
                 cmd.CommandText += "SELECT LUIS_ID, LUIS_INTENT, LUIS_ENTITIES, ISNULL(DLG_ID,0) AS DLG_ID, DLG_API_DEFINE, API_ID ";
                 cmd.CommandText += "  FROM TBL_DLG_RELATION_LUIS                                                    ";
-                cmd.CommandText += " WHERE LUIS_INTENT = @intentId                                                 ";
+                //cmd.CommandText += " WHERE LUIS_INTENT = @intentId                                                 ";
+                cmd.CommandText += " WHERE 1 = 1                                                 ";
                 cmd.CommandText += "   AND LUIS_ENTITIES = @entities                                                ";
                 cmd.CommandText += "   AND LUIS_ID = @luisId                                                        ";
 

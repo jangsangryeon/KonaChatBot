@@ -525,7 +525,7 @@ namespace KonaChatBot.DB
                 //cmd.CommandText += " WHERE LUIS_INTENT = @intentId                                                 ";
                 cmd.CommandText += " WHERE 1 = 1                                                 ";
                 cmd.CommandText += "   AND LUIS_ENTITIES = @entities                                                ";
-                cmd.CommandText += "   AND LUIS_ID = @luisId                                                        ";
+                //cmd.CommandText += "   AND LUIS_ID = @luisId                                                        ";
 
                 if(intentId != null){
                     cmd.Parameters.AddWithValue("@intentId", intentId);

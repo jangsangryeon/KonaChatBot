@@ -48,22 +48,23 @@ namespace KonaChatBot.Dialogs
             //Debug.WriteLine("fullentity = " + fullentity + "====" + fullentity.Length);
             //Debug.WriteLine("MessagesController.luisEntities = " + MessagesController.luisEntities + "====" + MessagesController.luisEntities.Length);
 
-            string compareLuisEntity = "";
-            if (!String.IsNullOrEmpty(fullentity))
+            if (!String.IsNullOrEmpty(MessagesController.luisEntities))
             {
-                //entity 길이 비교
-                if (fullentity.Length > MessagesController.luisEntities.Length)
+                if (!string.IsNullOrEmpty(fullentity))
                 {
-                    compareLuisEntity = fullentity;
-                }
-                else
-                {
-                    compareLuisEntity = MessagesController.luisEntities;
+                    //entity 길이 비교
+                    if (fullentity.Length > MessagesController.luisEntities.Length)
+                    {
+                        //DefineTypeChkSpare에서는 인텐트나 루이스아이디조건 없이 엔티티만 일치하면 다이얼로그 리턴
+                        MessagesController.relationList = db.DefineTypeChkSpare(fullentity);
+                    }
+                    else
+                    {
+                        MessagesController.relationList = db.DefineTypeChk(MessagesController.luisId, MessagesController.luisIntent, MessagesController.luisEntities);
+                    }
                 }
             }
 
-            //DefineTypeChkSpare에서는 인텐트나 루이스아이디조건 없이 엔티티만 일치하면 다이얼로그 리턴
-            MessagesController.relationList = db.DefineTypeChkSpare(compareLuisEntity);
             if (MessagesController.relationList.Count > 0)
             {
                 //답변이 시승 rest api 호출인 경우

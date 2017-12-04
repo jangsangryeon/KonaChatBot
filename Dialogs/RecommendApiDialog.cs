@@ -26,40 +26,32 @@
             var activity = context.Activity;
             var reply = context.MakeMessage();
 
-            List<RecommendConfirm> rc = db.SelectedRecommendConfirm;            
+            List<RecommendConfirm> rc = db.SelectedRecommendConfirm;
 
             foreach (RecommendConfirm temprc in rc)
             {
                 if (!temprc.KEYWORDGROUP.Equals(""))
                 {
-                    
-                    if (temprc.KEYWORDGROUP.Equals(RecommendContextConstants.Use) && temprc.KEYWORD.Equals("기타 용도"))
-                    {
-                        //if (context.ConversationData.TryGetValue(RecommendContextConstants.Use, out use))
-                        //{
-                        //    if (context.ConversationData.TryGetValue(RecommendContextConstants.Important, out important))
-                        //    {
-                        //        temprc.KEYWORDGROUP = RecommendContextConstants.Gender;
-                        //    } else
-                        //    {
-                        //        temprc.KEYWORDGROUP = RecommendContextConstants.Important;
-                        //    }
-                        //}
 
-                        context.ConversationData.SetValue(temprc.KEYWORDGROUP, temprc.KEYWORD);
-                        break;
-                        
-                    }
-                    else
+                    if (temprc.KEYWORD.Equals("기타"))
                     {
-                        Debug.WriteLine("temprc.KEYWORDGROUP.Equals(RecommendContextConstants.Important) = " + temprc.KEYWORDGROUP.Equals(RecommendContextConstants.Important));
-                        if (temprc.KEYWORDGROUP.Equals(RecommendContextConstants.Important) && temprc.KEYWORD.Equals("기타"))
+                        if (!context.ConversationData.TryGetValue(RecommendContextConstants.Use, out use))
+                        {
+                            temprc.KEYWORDGROUP = RecommendContextConstants.Use;
+                        }
+                        else if (!context.ConversationData.TryGetValue(RecommendContextConstants.Important, out important))
+                        {
+                            temprc.KEYWORDGROUP = RecommendContextConstants.Important;
+                        }
+                        else if (!context.ConversationData.TryGetValue(RecommendContextConstants.Gender, out gender))
                         {
                             temprc.KEYWORDGROUP = RecommendContextConstants.Gender;
                         }
-
-                        context.ConversationData.SetValue(temprc.KEYWORDGROUP, temprc.KEYWORD);
-                    }                    
+                    }
+                }
+                if (!temprc.KEYWORD.Equals("기타 용도"))
+                {
+                    context.ConversationData.SetValue(temprc.KEYWORDGROUP, temprc.KEYWORD);
                 }
             }
 
@@ -102,7 +94,7 @@
             int dbResult = db.insertUserQuery(Regex.Replace(MessagesController.queryStr, @"[^a-zA-Z0-9ㄱ-힣]", "", RegexOptions.Singleline), MessagesController.luisIntent, MessagesController.luisEntities, "0", MessagesController.luisId, 'H', 0);
             Debug.WriteLine("INSERT QUERY RESULT : " + dbResult.ToString());
 
-            if (db.insertHistory(activity.Conversation.Id, MessagesController.queryStr, MessagesController.relationList[0].dlgId.ToString(), activity.ChannelId, ((endTime - MessagesController.startTime).Milliseconds), 0) > 0)
+            if (db.insertHistory(activity.Conversation.Id, MessagesController.queryStr, "recommand api", activity.ChannelId, ((endTime - MessagesController.startTime).Milliseconds), 0) > 0)
             {
                 Debug.WriteLine("HISTORY RESULT SUCCESS");
                 //HistoryLog("HISTORY RESULT SUCCESS");
@@ -203,7 +195,8 @@
                     //message.Attachments.Add(GetHeroCard(SelectRecommend_DLG_MEDIA[i].card_title, "", SelectRecommend_DLG_MEDIA[i].card_text, cardImage, cardButtons));
                     returnAttachment = GetHeroCard(SelectRecommend_DLG_MEDIA[i].card_title, "", SelectRecommend_DLG_MEDIA[i].card_text, cardImage, cardButtons);
                 }
-            }else
+            }
+            else
             {
                 string domainURL = "https://bottest.hyundai.com";
 
@@ -294,7 +287,7 @@
                             Title = SelectRecommend_DLG_MEDIA[0].btn_2_title
                         };
                         cardButtons.Add(plButton);
-                    }                    
+                    }
                     returnAttachment = GetHeroCard("trim", subtitle, "", cardImage, cardButtons);
                 }
             }

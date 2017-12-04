@@ -53,7 +53,7 @@ namespace KonaChatBot.Dialogs
                 if (!string.IsNullOrEmpty(fullentity))
                 {
                     //entity 길이 비교
-                    if (fullentity.Length > MessagesController.luisEntities.Length)
+                    if (fullentity.Length > MessagesController.luisEntities.Length || MessagesController.luisIntent.Equals(null) || MessagesController.luisIntent.Equals(""))
                     {
                         //DefineTypeChkSpare에서는 인텐트나 루이스아이디조건 없이 엔티티만 일치하면 다이얼로그 리턴
                         MessagesController.relationList = db.DefineTypeChkSpare(fullentity);
